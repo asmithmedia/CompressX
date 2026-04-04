@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+.env.production.local
+frontend/.env.local
+
+# Build
+.next/
+out/
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Models (large files)
+*.bin
+*.safetensors
+*.gguf
+*.pt
+*.pth
+models/
+tmp/
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+celerybeat-schedule
+
+# MinIO data
+minio-data/
+
+# Prisma
+frontend/prisma/migrations/
+
+# Coverage
+coverage/
+.coverage
+htmlcov/

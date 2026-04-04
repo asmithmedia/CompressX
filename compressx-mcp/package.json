@@ -1,0 +1,28 @@
+{
+  "name": "compressx-mcp",
+  "version": "0.1.0",
+  "description": "MCP Server for CompressX - LLM model compression for Claude Code, Cursor, and other AI tools",
+  "type": "module",
+  "bin": {
+    "compressx-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": ["mcp", "llm", "compression", "gguf", "ollama", "claude-code", "cursor"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
