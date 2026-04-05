@@ -8,9 +8,10 @@ import { scanCommand } from "../src/commands/scan.js";
 import { updateCommand } from "../src/commands/update.js";
 import { uninstallCommand } from "../src/commands/uninstall.js";
 import { previewCommand } from "../src/commands/preview.js";
+import { benchmarkCommand } from "../src/commands/benchmark.js";
 import { checkForUpdatesSync, printUpdateBanner } from "../src/core/update-notifier.js";
 
-const VERSION = "0.6.1";
+const VERSION = "0.7.0";
 
 program
   .name("compressx")
@@ -53,8 +54,20 @@ program
   .option("-o, --output <dir>", "Output directory", "./compressx-output")
   .option("--no-modelfile", "Skip Modelfile generation")
   .option("--force", "Recompress even if the -cx variant already exists")
+  .option(
+    "--benchmark",
+    "After compression, run a side-by-side benchmark (speed, perplexity, prompt battery)",
+  )
   .option("--json", "Output as JSON")
   .action(compressCommand);
+
+program
+  .command("benchmark <model>")
+  .description("Compare a model and its -cx variant side-by-side (speed, perplexity, prompts)")
+  .option("--vs <name>", "Compare against a specific compressed model instead of auto-deriving -cx")
+  .option("--fast", "Skip perplexity measurement (roughly halves total runtime)")
+  .option("--no-prompts", "Skip the Ollama prompt battery")
+  .action(benchmarkCommand);
 
 program
   .command("models [query]")

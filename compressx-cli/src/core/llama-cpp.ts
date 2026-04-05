@@ -6,6 +6,8 @@ import { homedir, platform } from "node:os";
 export interface LlamaCppTools {
   convertScript: string | null;
   quantizeBinary: string | null;
+  benchBinary: string | null;
+  perplexityBinary: string | null;
 }
 
 function which(cmd: string): string | null {
@@ -26,6 +28,23 @@ export async function findLlamaCpp(): Promise<LlamaCppTools> {
   const localBin = join(homedir(), ".compressx", "bin");
   const isWindows = platform() === "win32";
   const quantizeExe = isWindows ? "llama-quantize.exe" : "llama-quantize";
+  const benchExe = isWindows ? "llama-bench.exe" : "llama-bench";
+  const perplexityExe = isWindows ? "llama-perplexity.exe" : "llama-perplexity";
+
+  const findBinary = (exeName: string, commonCmd: string): string | null => {
+    const candidates = [
+      which(commonCmd),
+      join(localBin, exeName),
+      join(localBin, "llama-bin", exeName),
+      join(localBin, "build", "bin", exeName),
+      `/usr/local/bin/${commonCmd}`,
+      `/opt/llama.cpp/build/bin/${commonCmd}`,
+    ];
+    for (const p of candidates) {
+      if (p && existsSync(p)) return p;
+    }
+    return null;
+  };
 
   // Find convert script
   let convertScript: string | null = null;
@@ -62,5 +81,8 @@ export async function findLlamaCpp(): Promise<LlamaCppTools> {
     }
   }
 
-  return { convertScript, quantizeBinary };
+  const benchBinary = findBinary(benchExe, "llama-bench");
+  const perplexityBinary = findBinary(perplexityExe, "llama-perplexity");
+
+  return { convertScript, quantizeBinary, benchBinary, perplexityBinary };
 }

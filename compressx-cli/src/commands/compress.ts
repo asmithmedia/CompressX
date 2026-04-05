@@ -42,6 +42,7 @@ interface CompressOptions {
   force?: boolean;
   target?: string;
   fromSource?: boolean;
+  benchmark?: boolean;
 }
 
 type CompressSource =
@@ -358,6 +359,21 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   console.log(chalk.bold("  Run it now:"));
   console.log(chalk.cyan(`    ${target.getInstructions(ctx)}`));
   console.log();
+
+  // Opt-in benchmark: compare the freshly-compressed variant against
+  // the original side-by-side. Only works for the Ollama target since
+  // the prompt battery needs both models registered there, and we
+  // rely on Ollama's blob layout to locate the original GGUF.
+  if (options.benchmark && target.id === "ollama" && precheck.ok) {
+    const { benchmarkCommand } = await import("./benchmark.js");
+    await benchmarkCommand(model.ollamaId, { fast: false });
+  } else if (options.benchmark && target.id !== "ollama") {
+    console.log(
+      chalk.gray(
+        "  Note: --benchmark is only supported with --target ollama (skipped).\n",
+      ),
+    );
+  }
 }
 
 /**

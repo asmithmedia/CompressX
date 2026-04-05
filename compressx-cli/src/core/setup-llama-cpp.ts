@@ -214,21 +214,28 @@ export async function setupLlamaCpp(): Promise<boolean> {
     extractArchive(archivePath, LLAMA_BIN_DIR);
     // Clean up the downloaded archive
     rmSync(archivePath, { force: true });
-    extractSpinner.succeed("Extracted to ~/.compressx/bin/llama-bin/");
+    extractSpinner.succeed(
+      "Extracted to ~/.compressx/bin/llama-bin/ (quantize + bench + perplexity)",
+    );
   } catch (err) {
     extractSpinner.fail("Extraction failed");
     console.error(chalk.red(`  ${err instanceof Error ? err.message : String(err)}`));
     return false;
   }
 
-  // Make the binary executable on Unix
+  // Make the binaries executable on Unix. The llama.cpp release zips
+  // contain quantize, bench, perplexity, cli, and a few others — we chmod
+  // anything that looks like a llama-* binary so all paths work.
   if (platform() !== "win32") {
-    const quantizePath = join(LLAMA_BIN_DIR, "llama-quantize");
-    if (existsSync(quantizePath)) {
-      try {
-        chmodSync(quantizePath, 0o755);
-      } catch {
-        // ignore
+    const unixBinaries = ["llama-quantize", "llama-bench", "llama-perplexity", "llama-cli"];
+    for (const name of unixBinaries) {
+      const p = join(LLAMA_BIN_DIR, name);
+      if (existsSync(p)) {
+        try {
+          chmodSync(p, 0o755);
+        } catch {
+          // ignore
+        }
       }
     }
   }

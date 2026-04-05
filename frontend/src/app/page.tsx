@@ -72,16 +72,24 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* What's new in v0.6 */}
+      {/* What's new in v0.7 */}
       <section className="max-w-4xl mx-auto px-6 pb-4 font-sans">
         <div className="bg-gray-950 border border-gray-900 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 rounded px-2 py-0.5">
-              NEW · v0.6.1
+              NEW · v0.7
             </span>
-            <span className="text-xs text-gray-500">Hardening release</span>
+            <span className="text-xs text-gray-500">Benchmark release</span>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            <div>
+              <div className="text-white font-bold mb-1">Benchmark before &amp; after</div>
+              <p className="text-gray-500">
+                New <code className="text-green-400">compressx benchmark</code> command. Side-by-side
+                speed, perplexity, and a 10-prompt regression battery with a
+                verdict.
+              </p>
+            </div>
             <div>
               <div className="text-white font-bold mb-1">Live progress bar</div>
               <p className="text-gray-500">
@@ -101,14 +109,6 @@ export default function LandingPage() {
               <p className="text-gray-500">
                 Every compressed model gets a sanity check. Catches broken
                 quants before you ever load them.
-              </p>
-            </div>
-            <div>
-              <div className="text-white font-bold mb-1">46 curated models + fallbacks</div>
-              <p className="text-gray-500">
-                Works with unknown Ollama tags too — if it has a{" "}
-                <code className="text-green-400">:Xb</code> suffix, CompressX
-                can compress it.
               </p>
             </div>
           </div>
@@ -162,6 +162,78 @@ export default function LandingPage() {
               <span className="text-gray-500">169/291 tensors  0:14 elapsed  eta 0:10</span>
             </div>
             <div className="text-gray-500 mt-3">  Using local Ollama blobs. <span className="text-green-400">~30 sec each, zero download.</span></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Benchmark demo */}
+      <section className="max-w-3xl mx-auto px-6 pb-20 font-sans">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold mb-2">Know what you&apos;re shipping.</h2>
+          <p className="text-gray-500 text-sm">
+            <code className="text-green-400 bg-gray-900 px-1.5 py-0.5 rounded text-xs">
+              compressx benchmark qwen3:4b
+            </code>{" "}
+            runs a side-by-side comparison with a color-coded verdict.
+          </p>
+        </div>
+        <div className="bg-gray-950 border border-gray-800 rounded-lg overflow-hidden font-mono text-xs">
+          <div className="flex items-center gap-1.5 px-4 py-3 bg-gray-900 border-b border-gray-800">
+            <div className="w-3 h-3 rounded-full bg-red-500" />
+            <div className="w-3 h-3 rounded-full bg-yellow-500" />
+            <div className="w-3 h-3 rounded-full bg-green-500" />
+            <div className="flex-1 text-center text-gray-500">benchmark</div>
+          </div>
+          <div className="p-6 leading-relaxed">
+            <div className="text-cyan-400">  CompressX Benchmark: qwen3:4b  vs  qwen3:4b-cx</div>
+            <div className="text-gray-700">  ────────────────────────────────────────────</div>
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              <div className="text-gray-600"></div>
+              <div className="text-white font-bold">Original</div>
+              <div className="text-white font-bold">Compressed</div>
+              <div className="text-white font-bold">Delta</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2 mt-1">
+              <div className="text-gray-500">Size on disk</div>
+              <div className="text-gray-400">8.10 GB</div>
+              <div className="text-gray-400">2.60 GB</div>
+              <div className="text-green-400">-68%</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="text-gray-500">Prompt eval</div>
+              <div className="text-gray-400">142 tok/s</div>
+              <div className="text-gray-400">187 tok/s</div>
+              <div className="text-green-400">+32%</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="text-gray-500">Generation</div>
+              <div className="text-gray-400">48 tok/s</div>
+              <div className="text-gray-400">74 tok/s</div>
+              <div className="text-green-400">+54%</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="text-gray-500">Perplexity</div>
+              <div className="text-gray-400">7.42</div>
+              <div className="text-gray-400">7.89</div>
+              <div className="text-yellow-400">+6.3%</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="text-gray-500">Prompt battery</div>
+              <div className="text-gray-400">10/10 ok</div>
+              <div className="text-gray-400">9/10 ok</div>
+              <div className="text-yellow-400">1 diverged</div>
+            </div>
+            <div className="mt-4">
+              <span className="text-gray-500">  Assessment: </span>
+              <span className="text-cyan-400 font-bold">Good — typical quantization trade-off</span>
+            </div>
+            <div className="text-gray-600 mt-1">    • Size reduced by 68%</div>
+            <div className="text-gray-600">    • Perplexity delta of 6.3% — within expected range</div>
+            <div className="text-gray-600">    • Generation speed up 54%</div>
+            <div className="mt-3">
+              <span className="text-white font-bold">  Recommendation: </span>
+              <span className="text-gray-500">Ship it unless quality-critical.</span>
+            </div>
           </div>
         </div>
       </section>
@@ -321,6 +393,9 @@ export default function LandingPage() {
             { cmd: "compressx compress qwen3:4b --from-source", desc: "Download original weights from HuggingFace for pristine quality (slower)" },
             { cmd: "compressx compress qwen3:4b --target lmstudio", desc: "Deploy to LM Studio instead of Ollama" },
             { cmd: "compressx compress qwen3:4b --target gguf", desc: "Just produce a GGUF file (for llama.cpp, Jan, GPT4All, Msty, etc.)" },
+            { cmd: "compressx compress qwen3:4b --benchmark", desc: "Compress and immediately run a side-by-side benchmark" },
+            { cmd: "compressx benchmark qwen3:4b", desc: "Full benchmark: speed, perplexity, 10-prompt battery, verdict (2-3 min)" },
+            { cmd: "compressx benchmark qwen3:4b --fast", desc: "Benchmark without perplexity — speed + prompts only (~30 sec)" },
             { cmd: "compressx hardware", desc: "Show detected GPU, VRAM, RAM, and recommended model sizes" },
             { cmd: "compressx models", desc: "List all supported models" },
             { cmd: "compressx update", desc: "Update CompressX to the latest version" },
