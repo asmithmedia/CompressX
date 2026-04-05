@@ -72,6 +72,42 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* What's new in v0.6 */}
+      <section className="max-w-4xl mx-auto px-6 pb-4 font-sans">
+        <div className="bg-gray-950 border border-gray-900 rounded-lg p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 rounded px-2 py-0.5">
+              NEW · v0.6
+            </span>
+            <span className="text-xs text-gray-500">Hardening release</span>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4 text-xs">
+            <div>
+              <div className="text-white font-bold mb-1">Self-installing</div>
+              <p className="text-gray-500">
+                First run auto-downloads llama.cpp binaries. No manual setup,
+                no <code className="text-green-400">brew install</code> prereqs.
+              </p>
+            </div>
+            <div>
+              <div className="text-white font-bold mb-1">Post-compression smoke test</div>
+              <p className="text-gray-500">
+                Every compressed model gets a sanity check. Catches broken
+                quants before you ever load them.
+              </p>
+            </div>
+            <div>
+              <div className="text-white font-bold mb-1">46 curated models + fallbacks</div>
+              <p className="text-gray-500">
+                Works with unknown Ollama tags too — if it has a{" "}
+                <code className="text-green-400">:Xb</code> suffix, CompressX
+                can compress it.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Terminal demo */}
       <section className="max-w-3xl mx-auto px-6 pb-20">
         <div className="bg-gray-950 border border-gray-800 rounded-lg overflow-hidden">
