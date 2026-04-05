@@ -73,7 +73,9 @@
       "Bash(mv \"frontend/src/lib/constants.ts\" \"_archive/frontend/src/lib/constants.ts\")",
       "Bash(mv \"frontend/src/lib/ollama-models.ts\" \"_archive/frontend/src/lib/ollama-models.ts\")",
       "Bash(mv \"frontend/src/hooks/useHardwareDetection.ts\" \"_archive/frontend/src/hooks/useHardwareDetection.ts\")",
-      "Bash(mv \"frontend/src/types\" \"_archive/frontend/src/types\")"
+      "Bash(mv \"frontend/src/types\" \"_archive/frontend/src/types\")",
+      "mcp__d6b52eb3-752b-4a57-8a28-35c24f433d19__check_domain_availability_and_price",
+      "Bash(node dist/compressx.js --version)"
     ]
   }
 }

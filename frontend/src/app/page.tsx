@@ -56,7 +56,7 @@ export default function LandingPage() {
             <div className="flex items-center justify-between bg-black rounded-md px-4 py-3">
               <code className="text-sm text-green-400 text-left overflow-x-auto">
                 <span className="text-gray-600">$ </span>
-                curl -fsSL compressx.dev/install.sh | sh
+                curl -fsSL compressx.asmith.media/install.sh | sh
               </code>
               <button
                 className="ml-4 text-xs text-gray-500 hover:text-white transition"
@@ -67,7 +67,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="text-xs text-gray-600 mt-2">
-            Windows: <code>irm compressx.dev/install.ps1 | iex</code>
+            Windows: <code>irm compressx.asmith.media/install.ps1 | iex</code>
           </div>
         </div>
 
@@ -227,7 +227,7 @@ export default function LandingPage() {
           <div className="bg-black rounded-md px-4 py-3">
             <code className="text-sm text-green-400">
               <span className="text-gray-600">$ </span>
-              curl -fsSL compressx.dev/install.sh | sh
+              curl -fsSL compressx.asmith.media/install.sh | sh
             </code>
           </div>
         </div>

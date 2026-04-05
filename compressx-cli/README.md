@@ -84,4 +84,4 @@ Run `compressx models` for the full list.
 
 CompressX · an **A. Smith Labs** product · © A. Smith Media
 
-[Visit the homepage](https://compressx-wheat.vercel.app) for the full install experience.
+[Visit the homepage](https://compressx.asmith.media) for the full install experience.

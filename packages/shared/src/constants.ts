@@ -20,5 +20,5 @@ export const JOB_STATUS_LABELS: Record<string, string> = {
   CANCELLED: "Cancelled",
 };
 
-export const COMPRESSX_API_URL = "https://compressx.dev/api/v1";
+export const COMPRESSX_API_URL = "https://compressx.asmith.media/api/v1";
 export const COMPRESSX_CONFIG_DIR = ".compressx";

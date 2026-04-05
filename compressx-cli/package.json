@@ -32,7 +32,7 @@
   ],
   "author": "A. Smith Media",
   "license": "UNLICENSED",
-  "homepage": "https://compressx-wheat.vercel.app",
+  "homepage": "https://compressx.asmith.media",
   "engines": {
     "node": ">=18"
   },

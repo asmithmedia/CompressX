@@ -4,7 +4,7 @@ export function generateModelfile(
   quantType: string
 ): string {
   return `# Modelfile for ${modelName} (${quantType.toUpperCase()})
-# Compressed with CompressX (https://compressx.dev)
+# Compressed with CompressX (https://compressx.asmith.media)
 FROM ./${ggufFilename}
 
 # System prompt (customize as needed)

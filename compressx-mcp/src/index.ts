@@ -11,7 +11,7 @@ import {
 } from "./tools/model-data.js";
 
 const API_KEY = process.env.COMPRESSX_API_KEY || "";
-const API_URL = process.env.COMPRESSX_API_URL || "https://compressx.dev/api/v1";
+const API_URL = process.env.COMPRESSX_API_URL || "https://compressx.asmith.media/api/v1";
 
 const client = new CompressXClient(API_URL, API_KEY);
 
@@ -112,7 +112,7 @@ server.tool(
       return {
         content: [{
           type: "text" as const,
-          text: "No API key configured. Set COMPRESSX_API_KEY environment variable.\n\nGet your key at https://compressx.dev/settings/api-keys\n\nFree tier includes 100 credits/month.",
+          text: "No API key configured. Set COMPRESSX_API_KEY environment variable.\n\nGet your key at https://compressx.asmith.media/settings/api-keys\n\nFree tier includes 100 credits/month.",
         }],
       };
     }
@@ -191,7 +191,7 @@ server.tool(
       return {
         content: [{
           type: "text" as const,
-          text: "No API key configured. Set COMPRESSX_API_KEY to check credits.\n\nSign up free at https://compressx.dev",
+          text: "No API key configured. Set COMPRESSX_API_KEY to check credits.\n\nSign up free at https://compressx.asmith.media",
         }],
       };
     }

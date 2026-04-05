@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CompressX one-line installer for macOS/Linux
-# Usage: curl -fsSL https://compressx.dev/install.sh | sh
+# Usage: curl -fsSL https://compressx.asmith.media/install.sh | sh
 
 set -e
 

@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 export async function loginCommand() {
   console.log(chalk.bold("\n  CompressX Login\n"));
-  console.log(chalk.gray("  Get your API key from https://compressx.dev/settings/api-keys\n"));
+  console.log(chalk.gray("  Get your API key from https://compressx.asmith.media/settings/api-keys\n"));
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
