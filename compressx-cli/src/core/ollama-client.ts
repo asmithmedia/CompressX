@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execSync } from "node:child_process";
 
 const OLLAMA_URL = process.env.OLLAMA_HOST || "http://localhost:11434";
 
@@ -63,4 +63,40 @@ export function createOllamaModel(
     stdio: "inherit",
     timeout: 600000,
   });
+}
+
+/**
+ * Fetch model capabilities from Ollama's /api/show endpoint.
+ * Ollama reports capabilities like "completion", "tools", "thinking",
+ * "vision", "embedding". The "thinking" capability is what we use to
+ * detect reasoning models (Qwen3, DeepSeek-R1, Phi-4-reasoning, etc.)
+ * that need a higher quant floor than general chat models.
+ *
+ * Returns an empty array if the model isn't installed or the API fails.
+ */
+export async function getModelCapabilities(ollamaId: string): Promise<string[]> {
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/show`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: ollamaId }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { capabilities?: string[] };
+    return data.capabilities || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Is this a thinking/reasoning model? Reasoning models (Qwen3,
+ * DeepSeek-R1, etc.) need a higher quant floor than general chat models
+ * because their chain-of-thought output is fragile at low bit counts —
+ * they start repeating or losing coherence at Q2_K.
+ */
+export async function isThinkingModel(ollamaId: string): Promise<boolean> {
+  const caps = await getModelCapabilities(ollamaId);
+  return caps.includes("thinking");
 }

@@ -3,14 +3,22 @@ import { existsSync, mkdirSync, writeFileSync, statSync, unlinkSync, copyFileSyn
 import { join, resolve } from "node:path";
 import chalk from "chalk";
 import ora from "ora";
+import inquirer from "inquirer";
 import { detectHardware } from "../core/hardware-detect.js";
 import { resolveModel, recommendQuantType } from "../core/model-resolver.js";
 import { findLlamaCpp } from "../core/llama-cpp.js";
 import { generateModelfile } from "../core/modelfile-generator.js";
 import { getDeploymentTarget, type DeploymentContext } from "../core/deployment/index.js";
 import { findLocalBlob } from "../core/ollama-blob-finder.js";
-import { listOllamaModels } from "../core/ollama-client.js";
+import { listOllamaModels, isThinkingModel } from "../core/ollama-client.js";
 import { canRequantize, normalizeQuant } from "../core/quant-compat.js";
+
+/**
+ * Quants that are known to break thinking/reasoning models like Qwen3,
+ * DeepSeek-R1, Phi-4-reasoning. Their chain-of-thought output becomes
+ * incoherent or loops indefinitely at these precision levels.
+ */
+const UNSAFE_QUANTS_FOR_THINKING = new Set(["q2_k", "iq2_xxs", "iq2_xs", "q3_k_s"]);
 
 interface CompressOptions {
   quant: string;
@@ -74,6 +82,51 @@ export async function compressCommand(modelId: string, options: CompressOptions)
       chalk.cyan(`  Auto-selected: ${chalk.bold(quantType.toUpperCase())}`) +
         chalk.gray(` (${recommended.label}, ~${recommended.estimatedSizeGb} GB)`),
     );
+  }
+
+  // Thinking-model guard: warn loudly if the user asked for a quant that
+  // breaks reasoning models (Qwen3, DeepSeek-R1, Phi-4-reasoning, etc.).
+  // Q2_K especially causes chain-of-thought repetition and incoherent
+  // output. This is a known failure mode, documented from end-to-end
+  // testing on qwen3:8b where Q2_K produced stuck-thinking loops.
+  if (UNSAFE_QUANTS_FOR_THINKING.has(quantType.toLowerCase())) {
+    const thinking = await isThinkingModel(model.ollamaId);
+    if (thinking) {
+      console.log();
+      console.log(
+        chalk.red.bold(
+          `  WARNING: ${model.name} is a reasoning model, and ${quantType.toUpperCase()} is known to break`,
+        ),
+      );
+      console.log(
+        chalk.red.bold(
+          `           chain-of-thought output. The compressed model will likely loop or`,
+        ),
+      );
+      console.log(chalk.red.bold(`           produce incoherent thinking.`));
+      console.log();
+      console.log(chalk.yellow(`  Recommended quants for reasoning models:`));
+      console.log(chalk.cyan(`    Q4_0    — smallest safe (fastest, ~30% smaller than Q4_K_M)`));
+      console.log(chalk.cyan(`    Q4_K_M  — balanced (recommended)`));
+      console.log(chalk.cyan(`    Q5_K_M  — higher quality`));
+      console.log();
+
+      const { proceed } = await inquirer.prompt<{ proceed: boolean }>([
+        {
+          type: "confirm",
+          name: "proceed",
+          message: `Compress anyway with ${quantType.toUpperCase()}?`,
+          default: false,
+        },
+      ]);
+
+      if (!proceed) {
+        console.log(chalk.gray("\n  Cancelled. Try: "));
+        console.log(chalk.cyan(`    compressx compress ${modelId} -q q4_0\n`));
+        process.exit(0);
+      }
+      console.log(chalk.yellow(`  Proceeding with ${quantType.toUpperCase()} at user request...\n`));
+    }
   }
 
   // Build deployment context early

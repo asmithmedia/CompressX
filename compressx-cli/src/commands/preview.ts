@@ -1,6 +1,9 @@
 import chalk from "chalk";
 import { detectHardware } from "../core/hardware-detect.js";
 import { resolveModel } from "../core/model-resolver.js";
+import { isThinkingModel } from "../core/ollama-client.js";
+
+const UNSAFE_QUANTS_FOR_THINKING = new Set(["q2_k", "iq2_xxs", "iq2_xs", "q3_k_s"]);
 
 /**
  * What-if mode: show all quant levels for a model side-by-side, with
@@ -22,12 +25,16 @@ export async function previewCommand(modelId: string) {
   }
 
   const hw = await detectHardware();
+  const thinking = await isThinkingModel(model.ollamaId);
 
   console.log(chalk.bold.cyan(`\n  CompressX Preview: ${model.name}`));
   console.log(chalk.gray(`  ${"-".repeat(60)}`));
   console.log(`  Source:        ${chalk.gray(model.hfRepoId)}`);
   console.log(`  Parameters:    ${chalk.gray(model.parametersBillion + "B")}`);
   console.log(`  Original FP16: ${chalk.gray("~" + model.fp16SizeGb + " GB")}`);
+  if (thinking) {
+    console.log(`  Type:          ${chalk.magenta("reasoning model (has thinking capability)")}`);
+  }
   console.log();
   console.log(
     `  Your hardware: ${chalk.white(hw.gpuName || "CPU-only")}${hw.vramGb ? chalk.gray(` | ${hw.vramGb} GB VRAM`) : ""}${chalk.gray(` | ${hw.ramGb} GB RAM`)}`,
@@ -57,13 +64,14 @@ export async function previewCommand(modelId: string) {
       "  Quant Type   Size      Reduction   Fits VRAM?   Quality",
     ),
   );
-  console.log(chalk.gray("  " + "-".repeat(60)));
+  console.log(chalk.gray("  " + "-".repeat(70)));
 
   let bestFit: string | null = null;
 
   for (const row of QUANT_LEVELS) {
     const sizeGb = (model.parametersBillion * 1e9 * row.bpw) / 8 / 1e9 + 0.1;
     const reduction = Math.round(((model.fp16SizeGb - sizeGb) / model.fp16SizeGb) * 100);
+    const unsafeForThinking = thinking && UNSAFE_QUANTS_FOR_THINKING.has(row.quant);
 
     let fits: string;
     if (!hw.vramGb && !hw.ramGb) {
@@ -72,10 +80,11 @@ export async function previewCommand(modelId: string) {
       const maxGb = hw.maxModelGb;
       if (sizeGb <= maxGb * 0.9) {
         fits = chalk.green("[YES]");
-        if (!bestFit) bestFit = row.quant;
+        // Don't pick an unsafe quant as "best fit" for thinking models
+        if (!bestFit && !unsafeForThinking) bestFit = row.quant;
       } else if (sizeGb <= maxGb) {
         fits = chalk.yellow("[TIGHT]");
-        if (!bestFit) bestFit = row.quant;
+        if (!bestFit && !unsafeForThinking) bestFit = row.quant;
       } else {
         fits = chalk.red("[NO]");
       }
@@ -87,20 +96,33 @@ export async function previewCommand(modelId: string) {
       reduction > 0
         ? chalk.green(`-${reduction}%`.padEnd(11))
         : chalk.gray(" 0%".padEnd(11));
-    // Fits column — chalk color codes have 9 extra chars for ANSI escapes
     const fitsCol = fits.padEnd(12 + 9);
-    const qualityCol = chalk.gray(row.label);
+    const qualityCol = unsafeForThinking
+      ? chalk.red(`${row.label} — breaks reasoning`)
+      : chalk.gray(row.label);
 
     console.log(`  ${quantCol}   ${sizeCol} ${reductionCol} ${fitsCol} ${qualityCol}`);
   }
 
   console.log();
 
+  if (thinking) {
+    console.log(
+      chalk.magenta(
+        "  Note: This is a reasoning model. Q2_K / Q3_K_S break chain-of-thought",
+      ),
+    );
+    console.log(
+      chalk.magenta("        output. Q4_0 is the recommended floor for thinking models."),
+    );
+    console.log();
+  }
+
   if (bestFit) {
     console.log(chalk.bold("  To compress with the best quant for your hardware:"));
     console.log(chalk.cyan(`    compressx compress ${model.ollamaId} -q ${bestFit}`));
   } else {
-    console.log(chalk.yellow("  This model is too large for your hardware at any quant level."));
+    console.log(chalk.yellow("  This model is too large for your hardware at any safe quant level."));
     console.log(chalk.gray("  Consider a smaller model family or a machine with more VRAM."));
   }
 

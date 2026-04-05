@@ -5,7 +5,12 @@ import inquirer from "inquirer";
 const Separator = inquirer.Separator;
 const EXIT_VALUE = "__compressx_exit__";
 import { detectHardware } from "../core/hardware-detect.js";
-import { isOllamaRunning, listOllamaModels, toCxName } from "../core/ollama-client.js";
+import {
+  isOllamaRunning,
+  listOllamaModels,
+  toCxName,
+  isThinkingModel,
+} from "../core/ollama-client.js";
 import { resolveModel, recommendQuantType } from "../core/model-resolver.js";
 import { compressCommand } from "./compress.js";
 
@@ -26,23 +31,35 @@ interface Candidate {
   targetSizeGb: number;
   savings: number;
   savingsPct: number;
-  /** Most aggressive quant (Q2_K) — used for the "what if" comparison
-   *  when the hardware-recommended quant isn't smaller than what's
-   *  already installed. This is the "absolute maximum savings" line. */
+  /** Aggressive quant for the "what if" comparison. Q2_K for general
+   *  chat models, Q4_0 for thinking/reasoning models which need a
+   *  higher floor to stay coherent. */
   aggressiveQuant: string;
+  aggressiveBpw: number;
   aggressiveSizeGb: number;
   aggressiveSavings: number;
   aggressiveSavingsPct: number;
+  isThinking: boolean;
   alreadyCompressed: boolean;
   fitsWell: boolean;
 }
 
-/** Bits-per-weight for the most aggressive quant we ship. */
-const AGGRESSIVE_BPW = 3.35; // Q2_K
-const AGGRESSIVE_QUANT = "q2_k";
+/**
+ * Bits-per-weight and quant name for the "aggressive savings" column.
+ * Thinking/reasoning models (Qwen3, DeepSeek-R1, Phi-4-reasoning) lose
+ * coherence at Q2_K — their chain-of-thought starts repeating and
+ * never closes. Q4_0 is the safe aggressive floor for thinking models.
+ * General chat models tolerate Q2_K fine.
+ */
+const AGGRESSIVE_QUANT_CHAT = { name: "q2_k", bpw: 3.35 };
+const AGGRESSIVE_QUANT_THINKING = { name: "q4_0", bpw: 4.5 };
 
-function estimateAggressiveSize(parametersBillion: number): number {
-  return Math.round(((parametersBillion * 1e9 * AGGRESSIVE_BPW) / 8 / 1e9 + 0.1) * 100) / 100;
+function getAggressiveQuant(isThinking: boolean) {
+  return isThinking ? AGGRESSIVE_QUANT_THINKING : AGGRESSIVE_QUANT_CHAT;
+}
+
+function estimateSize(parametersBillion: number, bpw: number): number {
+  return Math.round(((parametersBillion * 1e9 * bpw) / 8 / 1e9 + 0.1) * 100) / 100;
 }
 
 /**
@@ -99,7 +116,12 @@ export async function scanCommand(options: ScanOptions = {}) {
     const savingsPct = currentGb > 0 ? Math.round((savings / currentGb) * 100) : 0;
     const fitsWell = currentGb <= recommended.estimatedSizeGb * 1.1;
 
-    const aggressiveSizeGb = estimateAggressiveSize(resolved.parametersBillion);
+    // Detect thinking/reasoning models via Ollama's capabilities API.
+    // Thinking models need a higher aggressive-quant floor (Q4_0 vs Q2_K)
+    // to avoid chain-of-thought repetition and incoherence.
+    const isThinking = await isThinkingModel(m.name);
+    const aggressive = getAggressiveQuant(isThinking);
+    const aggressiveSizeGb = estimateSize(resolved.parametersBillion, aggressive.bpw);
     const aggressiveSavings = Math.max(0, currentGb - aggressiveSizeGb);
     const aggressiveSavingsPct =
       currentGb > 0 ? Math.round((aggressiveSavings / currentGb) * 100) : 0;
@@ -114,10 +136,12 @@ export async function scanCommand(options: ScanOptions = {}) {
       targetSizeGb: recommended.estimatedSizeGb,
       savings,
       savingsPct,
-      aggressiveQuant: AGGRESSIVE_QUANT,
+      aggressiveQuant: aggressive.name,
+      aggressiveBpw: aggressive.bpw,
       aggressiveSizeGb,
       aggressiveSavings,
       aggressiveSavingsPct,
+      isThinking,
       alreadyCompressed,
       fitsWell,
     });
@@ -147,13 +171,9 @@ export async function scanCommand(options: ScanOptions = {}) {
   // "what compression would save" view with an inline checkbox picker.
   if (!showAll && visible.length === 0) {
     console.log();
-    console.log(
-      chalk.green("  [OK] All your models already fit your hardware well."),
-    );
+    console.log(chalk.green("  [OK] All your models already fit your hardware well."));
     console.log();
-    console.log(
-      chalk.white(`  Here's what aggressive compression (${AGGRESSIVE_QUANT.toUpperCase()}) could still save:`),
-    );
+    console.log(chalk.white(`  Here's what aggressive compression could still save:`));
     console.log();
 
     // Sort by biggest aggressive savings first
@@ -165,26 +185,39 @@ export async function scanCommand(options: ScanOptions = {}) {
         "  " +
           "Model".padEnd(nameWidth) +
           "Current".padEnd(12) +
-          `${AGGRESSIVE_QUANT.toUpperCase()}`.padEnd(10) +
-          "Savings",
+          "Target".padEnd(14) +
+          "Savings  Type",
       ),
     );
-    console.log(chalk.gray("  " + "-".repeat(nameWidth + 35)));
+    console.log(chalk.gray("  " + "-".repeat(nameWidth + 50)));
 
     for (const c of sorted) {
+      const typeLabel = c.isThinking
+        ? chalk.magenta("reasoning")
+        : chalk.gray("chat");
       console.log(
         "  " +
           chalk.white(c.installedName.padEnd(nameWidth)) +
           chalk.gray(`${c.currentSizeGb.toFixed(1)} GB`.padEnd(12)) +
-          chalk.cyan(`${c.aggressiveSizeGb.toFixed(1)} GB`.padEnd(10)) +
-          chalk.green(`-${c.aggressiveSavingsPct}%`) +
-          (c.alreadyCompressed ? chalk.yellow("  (already has -cx)") : ""),
+          chalk.cyan(
+            `${c.aggressiveSizeGb.toFixed(1)} GB ${c.aggressiveQuant.toUpperCase()}`.padEnd(14),
+          ) +
+          chalk.green(`-${c.aggressiveSavingsPct}%`.padEnd(9)) +
+          typeLabel +
+          (c.alreadyCompressed ? chalk.yellow("  (has -cx)") : ""),
       );
     }
 
     console.log();
     console.log(
-      chalk.gray("  Quality: Q2_K is the smallest quant — noticeable quality loss on some tasks."),
+      chalk.gray(
+        "  Quant floors: Q2_K for chat models, Q4_0 for reasoning models.",
+      ),
+    );
+    console.log(
+      chalk.gray(
+        "  Reasoning models (Qwen3, DeepSeek-R1) lose chain-of-thought coherence at Q2_K.",
+      ),
     );
     console.log(
       chalk.gray("  Tip: 'compressx preview <model>' shows every quant level for one model."),
@@ -201,15 +234,16 @@ export async function scanCommand(options: ScanOptions = {}) {
       {
         type: "checkbox",
         name: "selected",
-        message: `Compress any of these to ${AGGRESSIVE_QUANT.toUpperCase()} anyway?`,
+        message: `Compress any of these?`,
         choices: [
           ...selectable.map((c) => ({
             name:
               `${c.installedName.padEnd(nameWidth)} ` +
               chalk.gray(
-                `${c.currentSizeGb.toFixed(1)} GB -> ${c.aggressiveSizeGb.toFixed(1)} GB`,
+                `${c.currentSizeGb.toFixed(1)} GB -> ${c.aggressiveSizeGb.toFixed(1)} GB ${c.aggressiveQuant.toUpperCase()}`,
               ) +
-              chalk.cyan(` (-${c.aggressiveSavingsPct}%)`),
+              chalk.cyan(` (-${c.aggressiveSavingsPct}%)`) +
+              (c.isThinking ? chalk.magenta("  [reasoning]") : ""),
             value: c.installedName,
             checked: false,
           })),
@@ -228,11 +262,18 @@ export async function scanCommand(options: ScanOptions = {}) {
       return;
     }
 
-    await runCompressions(
-      selected.filter((v) => v !== EXIT_VALUE),
-      AGGRESSIVE_QUANT,
-      options.output,
-    );
+    // Each model gets its OWN aggressive quant — chat models go to Q2_K,
+    // reasoning models go to Q4_0. This fixes the v0.5.0 bug where
+    // Qwen3 and other thinking models got stuck in chain-of-thought loops
+    // after being forced to Q2_K.
+    const selectedWithQuants = selected
+      .filter((v) => v !== EXIT_VALUE)
+      .map((name) => {
+        const candidate = selectable.find((c) => c.installedName === name)!;
+        return { name, quant: candidate.aggressiveQuant };
+      });
+
+    await runCompressionsPerModelQuant(selectedWithQuants, options.output);
     return;
   }
 
@@ -384,10 +425,26 @@ function printLibraryPreview(all: Candidate[]) {
 }
 
 /**
- * Run compressCommand for each selected model. If quant is empty,
- * compress.ts picks the hardware-recommended quant per model.
+ * Run compressCommand for each selected model using a single shared quant.
+ * Used by the normal scan flow where every candidate gets the hardware-
+ * recommended quant.
  */
 async function runCompressions(selected: string[], quant: string, output?: string) {
+  await runCompressionsPerModelQuant(
+    selected.map((name) => ({ name, quant })),
+    output,
+  );
+}
+
+/**
+ * Run compressCommand for each selected model, using a per-model quant.
+ * Used by the "aggressive savings" flow where chat models get Q2_K and
+ * reasoning models get Q4_0.
+ */
+async function runCompressionsPerModelQuant(
+  selected: Array<{ name: string; quant: string }>,
+  output?: string,
+) {
   console.log();
   console.log(
     chalk.bold(`  Compressing ${selected.length} model${selected.length > 1 ? "s" : ""}...`),
@@ -397,10 +454,13 @@ async function runCompressions(selected: string[], quant: string, output?: strin
   );
 
   for (let i = 0; i < selected.length; i++) {
-    const target = selected[i];
-    console.log(chalk.bold.cyan(`\n  [${i + 1}/${selected.length}] ${target}`));
+    const { name, quant } = selected[i];
+    console.log(
+      chalk.bold.cyan(`\n  [${i + 1}/${selected.length}] ${name}`) +
+        (quant ? chalk.gray(` -> ${quant.toUpperCase()}`) : ""),
+    );
     try {
-      await compressCommand(target, {
+      await compressCommand(name, {
         quant,
         cloud: false,
         output: output || "./compressx-output",
