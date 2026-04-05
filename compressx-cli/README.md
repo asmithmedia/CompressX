@@ -54,8 +54,21 @@ Compress once, deploy anywhere. Choose your target with `--target`:
 
 1. **Scan.** `compressx` detects your GPU and RAM, queries your local Ollama, and identifies models that could be smaller. On well-equipped machines, run `compressx --all` to see every installed model anyway.
 2. **Preview.** Run `compressx preview <model>` to see every quant level side-by-side with estimated size, compression ratio, and VRAM fit — no download, no compression.
-3. **Compress.** Downloads the original unquantized weights from HuggingFace, runs GGUF quantization locally via `llama.cpp`. No cloud. No uploads. No account.
-4. **Deploy.** Hands the compressed file to your chosen runtime. Originals are never modified.
+3. **Compress.** By default, CompressX uses the GGUF file already in your Ollama library and re-quantizes it locally — **zero download, ~30 seconds for a 4B model**. If the model isn't installed locally (or you want pristine FP16 source quality), CompressX automatically falls back to downloading the original weights from HuggingFace. Pass `--from-source` to force the fresh-download path.
+4. **Deploy.** Hands the compressed file to your chosen runtime. Originals are never modified — compressed variants live alongside them with a `-cx` suffix.
+
+### Local vs. Fresh-Source compression
+
+| | Local (default) | `--from-source` |
+|---|---|---|
+| Speed | ~30 sec | ~3-10 min |
+| Downloads | 0 bytes | Full model weights (~8-60 GB) |
+| Quality | 1-3% more perplexity loss from double-quantization | Pristine, one-step quantization |
+| Requires | Model already in Ollama | Python + `huggingface_hub` |
+| Can upgrade quality? | No (can't go Q4 → Q8) | Yes |
+| Best for | Shrinking models you already have | First-time compression, pristine quality |
+
+The local path works by inheriting the source model's Modelfile (TEMPLATE, SYSTEM, PARAMETERs) so the compressed variant keeps the correct chat format. The 1-3% extra perplexity loss from double-quantization is usually imperceptible for chat and code tasks. For pristine benchmark-quality output, use `--from-source`.
 
 ## Why CompressX?
 
@@ -73,6 +86,7 @@ Compress once, deploy anywhere. Choose your target with `--target`:
 | `compressx preview <model>` | Preview every quant level for a model without compressing |
 | `compressx compress <model>` | Compress a specific model with auto-recommended quant |
 | `compressx compress <model> -q q4_k_m` | Compress with a specific quantization type |
+| `compressx compress <model> --from-source` | Download original weights from HuggingFace for pristine quality |
 | `compressx compress <model> --target lmstudio` | Deploy to LM Studio instead of Ollama |
 | `compressx compress <model> --target gguf` | Produce a plain GGUF file (any runtime) |
 | `compressx hardware` | Show detected GPU, VRAM, RAM, and max model size |

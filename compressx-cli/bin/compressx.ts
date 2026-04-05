@@ -10,7 +10,7 @@ import { uninstallCommand } from "../src/commands/uninstall.js";
 import { previewCommand } from "../src/commands/preview.js";
 import { checkForUpdatesSync, printUpdateBanner } from "../src/core/update-notifier.js";
 
-const VERSION = "0.4.0";
+const VERSION = "0.5.0";
 
 program
   .name("compressx")
@@ -44,6 +44,10 @@ program
     "-t, --target <name>",
     "Deployment target: ollama (default), lmstudio, or gguf",
     "ollama",
+  )
+  .option(
+    "--from-source",
+    "Download original weights from HuggingFace instead of re-quantizing the local Ollama blob (slower but pristine quality)",
   )
   .option("--cloud", "Use cloud compression (coming soon)")
   .option("-o, --output <dir>", "Output directory", "./compressx-output")

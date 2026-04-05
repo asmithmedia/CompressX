@@ -111,6 +111,7 @@ export default function LandingPage() {
             <div className="text-green-400">    ❯ ◉ qwen3:14b</div>
             <div className="text-green-400">      ◉ gemma4:12b</div>
             <div className="text-gray-600">      ◯ llama3.1:8b</div>
+            <div className="text-gray-500 mt-3">  Using local Ollama blobs. <span className="text-green-400">~30 sec each, zero download.</span></div>
           </div>
         </div>
       </section>
@@ -196,9 +197,13 @@ export default function LandingPage() {
             <div className="text-green-400 text-3xl mb-3">2.</div>
             <h3 className="text-lg font-bold mb-2">Compress</h3>
             <p className="text-gray-400 text-sm">
-              CompressX pulls the original unquantized weights from HuggingFace
-              and runs GGUF quantization locally using llama.cpp. No cloud, no
-              credits, no account.
+              CompressX re-quantizes the GGUF file already in your Ollama
+              library —{" "}
+              <span className="text-green-400">~30 seconds, zero download</span>.
+              No model yet? It falls back to fetching the original weights
+              automatically. Use{" "}
+              <code className="text-green-400 bg-gray-900 px-1.5 py-0.5 rounded">--from-source</code>{" "}
+              for pristine quality.
             </p>
           </div>
           <div>
@@ -263,6 +268,7 @@ export default function LandingPage() {
             { cmd: "compressx preview qwen3:14b", desc: "See every quant level side-by-side for a specific model" },
             { cmd: "compressx compress qwen3:4b", desc: "Compress a specific model to the auto-recommended quant level" },
             { cmd: "compressx compress qwen3:4b -q q4_k_m", desc: "Compress with a specific quantization type" },
+            { cmd: "compressx compress qwen3:4b --from-source", desc: "Download original weights from HuggingFace for pristine quality (slower)" },
             { cmd: "compressx compress qwen3:4b --target lmstudio", desc: "Deploy to LM Studio instead of Ollama" },
             { cmd: "compressx compress qwen3:4b --target gguf", desc: "Just produce a GGUF file (for llama.cpp, Jan, GPT4All, Msty, etc.)" },
             { cmd: "compressx hardware", desc: "Show detected GPU, VRAM, RAM, and recommended model sizes" },
