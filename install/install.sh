@@ -13,12 +13,12 @@ NC='\033[0m'
 
 echo ""
 echo -e "${BOLD}${BLUE}  CompressX${NC} - LLM compression for Ollama"
-echo -e "${BOLD}  ─────────────────────────────────────${NC}"
+echo -e "${BOLD}  =====================================${NC}"
 echo ""
 
 # Check Node.js
 if ! command -v node >/dev/null 2>&1; then
-  echo -e "${RED}  ✗ Node.js is required but not installed.${NC}"
+  echo -e "${RED}  [X] Node.js is required but not installed.${NC}"
   echo ""
   echo "  Install Node.js from https://nodejs.org (v18 or later)"
   echo "  Or via package manager:"
@@ -30,23 +30,23 @@ fi
 
 NODE_VERSION=$(node -v | sed 's/v//' | cut -d. -f1)
 if [ "$NODE_VERSION" -lt 18 ]; then
-  echo -e "${RED}  ✗ Node.js 18+ required. Found: $(node -v)${NC}"
+  echo -e "${RED}  [X] Node.js 18+ required. Found: $(node -v)${NC}"
   exit 1
 fi
 
-echo -e "${GREEN}  ✓${NC} Node.js $(node -v)"
+echo -e "${GREEN}  [OK]${NC} Node.js $(node -v)"
 
 # Check Python (for llama.cpp conversion scripts)
 if ! command -v python >/dev/null 2>&1 && ! command -v python3 >/dev/null 2>&1; then
-  echo -e "${YELLOW}  ⚠ Python 3 not found. Required for model conversion.${NC}"
-  echo "    Install Python 3.11+ from https://python.org"
+  echo -e "${YELLOW}  [!] Python 3 not found. Required for model conversion.${NC}"
+  echo "      Install Python 3.11+ from https://python.org"
 fi
 
 # Check Ollama (optional but recommended)
 if command -v ollama >/dev/null 2>&1; then
-  echo -e "${GREEN}  ✓${NC} Ollama installed"
+  echo -e "${GREEN}  [OK]${NC} Ollama installed"
 else
-  echo -e "${YELLOW}  ⚠${NC} Ollama not found. Install from https://ollama.com"
+  echo -e "${YELLOW}  [!] Ollama not found. Install from https://ollama.com${NC}"
 fi
 
 # Install CompressX CLI via npm
@@ -75,7 +75,7 @@ if command -v pip >/dev/null 2>&1 || command -v pip3 >/dev/null 2>&1; then
 fi
 
 echo ""
-echo -e "${GREEN}${BOLD}  ✓ CompressX installed!${NC}"
+echo -e "${GREEN}${BOLD}  [OK] CompressX installed!${NC}"
 echo ""
 echo -e "${BOLD}  Quick start:${NC}"
 echo -e "    ${BLUE}compressx${NC}                    ${NC}# Scan your Ollama library, suggest compressions${NC}"
@@ -83,5 +83,5 @@ echo -e "    ${BLUE}compressx compress qwen3:4b${NC}  ${NC}# Compress a specific
 echo -e "    ${BLUE}compressx hardware${NC}            ${NC}# Show detected hardware${NC}"
 echo ""
 echo -e "  ${NC}Originals are kept. Compressed versions get a ${GREEN}-cx${NC} suffix in Ollama.${NC}"
-echo -e "  ${NC}Example: ${BLUE}qwen3:4b${NC} → ${GREEN}qwen3:4b-cx${NC}"
+echo -e "  ${NC}Example: ${BLUE}qwen3:4b${NC} -> ${GREEN}qwen3:4b-cx${NC}"
 echo ""

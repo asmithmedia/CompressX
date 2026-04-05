@@ -1,6 +1,6 @@
 {
   "name": "compressx",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Compress LLM models for Ollama in one command. Keeps your originals, adds a -cx variant. Hardware-aware, fully local, no account required.",
   "type": "module",
   "bin": {

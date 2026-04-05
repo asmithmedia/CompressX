@@ -3,10 +3,13 @@
 
 $ErrorActionPreference = "Stop"
 
+# Try to enable UTF-8 output, but fall back silently on older hosts
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+
 Write-Host ""
 Write-Host "  CompressX" -ForegroundColor Cyan -NoNewline
 Write-Host " - LLM compression for Ollama"
-Write-Host "  ─────────────────────────────────────"
+Write-Host "  ====================================="
 Write-Host ""
 
 # Check Node.js
@@ -14,13 +17,13 @@ try {
     $nodeVersion = node -v
     $majorVersion = [int]($nodeVersion -replace 'v(\d+)\..*', '$1')
     if ($majorVersion -lt 18) {
-        Write-Host "  ✗ Node.js 18+ required. Found: $nodeVersion" -ForegroundColor Red
+        Write-Host "  [X] Node.js 18+ required. Found: $nodeVersion" -ForegroundColor Red
         exit 1
     }
-    Write-Host "  ✓" -ForegroundColor Green -NoNewline
+    Write-Host "  [OK]" -ForegroundColor Green -NoNewline
     Write-Host " Node.js $nodeVersion"
 } catch {
-    Write-Host "  ✗ Node.js is required but not installed." -ForegroundColor Red
+    Write-Host "  [X] Node.js is required but not installed." -ForegroundColor Red
     Write-Host ""
     Write-Host "  Install Node.js from https://nodejs.org (v18 or later)"
     Write-Host ""
@@ -30,20 +33,20 @@ try {
 # Check Python
 try {
     python --version | Out-Null
-    Write-Host "  ✓" -ForegroundColor Green -NoNewline
+    Write-Host "  [OK]" -ForegroundColor Green -NoNewline
     Write-Host " Python installed"
 } catch {
-    Write-Host "  ⚠ Python 3 not found. Required for model conversion." -ForegroundColor Yellow
-    Write-Host "    Install from https://python.org"
+    Write-Host "  [!] Python 3 not found. Required for model conversion." -ForegroundColor Yellow
+    Write-Host "      Install from https://python.org"
 }
 
 # Check Ollama
 try {
     ollama --version | Out-Null
-    Write-Host "  ✓" -ForegroundColor Green -NoNewline
+    Write-Host "  [OK]" -ForegroundColor Green -NoNewline
     Write-Host " Ollama installed"
 } catch {
-    Write-Host "  ⚠ Ollama not found. Install from https://ollama.com" -ForegroundColor Yellow
+    Write-Host "  [!] Ollama not found. Install from https://ollama.com" -ForegroundColor Yellow
 }
 
 # Install CompressX CLI
@@ -68,11 +71,11 @@ try {
     Write-Host "  Installing Python dependencies..."
     pip install --quiet --user huggingface_hub gguf sentencepiece protobuf 2>&1 | Out-Null
 } catch {
-    Write-Host "  ⚠ Could not install Python packages automatically" -ForegroundColor Yellow
+    Write-Host "  [!] Could not install Python packages automatically" -ForegroundColor Yellow
 }
 
 Write-Host ""
-Write-Host "  ✓ CompressX installed!" -ForegroundColor Green
+Write-Host "  [OK] CompressX installed!" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Quick start:"
 Write-Host "    compressx" -ForegroundColor Cyan -NoNewline
@@ -87,6 +90,6 @@ Write-Host "-cx" -ForegroundColor Green -NoNewline
 Write-Host " suffix in Ollama."
 Write-Host "  Example: " -NoNewline
 Write-Host "qwen3:4b" -ForegroundColor Cyan -NoNewline
-Write-Host " → " -NoNewline
+Write-Host " -> " -NoNewline
 Write-Host "qwen3:4b-cx" -ForegroundColor Green
 Write-Host ""

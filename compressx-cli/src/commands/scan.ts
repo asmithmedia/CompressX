@@ -86,7 +86,7 @@ export async function scanCommand(options: ScanOptions = {}) {
   console.log();
 
   if (candidates.length === 0) {
-    console.log(chalk.green("  ✓ All your models are already well-sized for this hardware.\n"));
+    console.log(chalk.green("  [OK] All your models are already well-sized for this hardware.\n"));
     console.log(chalk.gray("  To compress a specific model from HuggingFace:"));
     console.log(chalk.gray("    compressx compress qwen3:4b\n"));
     return;
@@ -101,11 +101,11 @@ export async function scanCommand(options: ScanOptions = {}) {
       "  " +
         "Model".padEnd(nameWidth) +
         "Current".padEnd(12) +
-        "→  CompressX".padEnd(18) +
+        "->  CompressX".padEnd(18) +
         "Savings"
     )
   );
-  console.log(chalk.gray("  " + "─".repeat(nameWidth + 45)));
+  console.log(chalk.gray("  " + "-".repeat(nameWidth + 45)));
 
   for (const c of candidates) {
     const savingsPct = Math.round((c.savings / c.currentSizeGb) * 100);
@@ -137,7 +137,7 @@ export async function scanCommand(options: ScanOptions = {}) {
       name: "selected",
       message: "Select models to compress:",
       choices: actionable.map((c) => ({
-        name: `${c.installedName.padEnd(nameWidth)} ${chalk.gray(`${c.currentSizeGb.toFixed(1)} GB → ${c.targetSizeGb.toFixed(1)} GB`)}`,
+        name: `${c.installedName.padEnd(nameWidth)} ${chalk.gray(`${c.currentSizeGb.toFixed(1)} GB -> ${c.targetSizeGb.toFixed(1)} GB`)}`,
         value: c.installedName,
         checked: false,
       })),
@@ -170,7 +170,7 @@ export async function scanCommand(options: ScanOptions = {}) {
     }
   }
 
-  console.log(chalk.green.bold("\n  ✓ All done!\n"));
+  console.log(chalk.green.bold("\n  [OK] All done!\n"));
   console.log(chalk.gray("  See your new models:"));
   console.log(chalk.cyan("    ollama list\n"));
 }

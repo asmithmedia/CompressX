@@ -81,7 +81,9 @@
       "Bash(nslookup compressx.asmith.media 8.8.8.8)",
       "Bash(curl -v https://compressx.asmith.media)",
       "Bash(npm uninstall:*)",
-      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://compressx-wheat.vercel.app)"
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://compressx-wheat.vercel.app)",
+      "Bash(curl -s https://compressx.asmith.media/install.ps1)",
+      "Bash(curl -s https://compressx.asmith.media/_next/static/chunks/08hr7nufid-i3.js)"
     ]
   }
 }

@@ -40,7 +40,7 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   const cxName = toCxName(model.ollamaId);
 
   console.log(chalk.bold.cyan(`\n  CompressX`));
-  console.log(chalk.gray(`  ${"─".repeat(50)}`));
+  console.log(chalk.gray(`  ${"-".repeat(50)}`));
   console.log(`  Model:         ${chalk.white(model.name)}`);
   console.log(`  HuggingFace:   ${chalk.gray(model.hfRepoId)}`);
   console.log(`  Parameters:    ${chalk.gray(model.parametersBillion + "B")}`);
@@ -185,8 +185,8 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   const finalSize = existsSync(outputPath) ? statSync(outputPath).size / 1e9 : 0;
   const reduction = Math.round(((model.fp16SizeGb - finalSize) / model.fp16SizeGb) * 100);
 
-  console.log(chalk.green.bold("\n  ✓ Compression complete!"));
-  console.log(chalk.gray(`  ${"─".repeat(50)}`));
+  console.log(chalk.green.bold("\n  [OK] Compression complete!"));
+  console.log(chalk.gray(`  ${"-".repeat(50)}`));
   console.log(`  ${chalk.gray("Original:")}    ${model.fp16SizeGb} GB`);
   console.log(`  ${chalk.gray("Compressed:")}  ${chalk.green(finalSize.toFixed(2) + " GB")} ${chalk.gray(`(-${reduction}%)`)}`);
   console.log(`  ${chalk.gray("Quant:")}       ${quantType.toUpperCase()}`);
