@@ -80,7 +80,8 @@
       "Bash(nslookup compressx.asmith.media)",
       "Bash(nslookup compressx.asmith.media 8.8.8.8)",
       "Bash(curl -v https://compressx.asmith.media)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://compressx-wheat.vercel.app)"
     ]
   }
 }

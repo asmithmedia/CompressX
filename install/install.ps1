@@ -1,5 +1,5 @@
 # CompressX one-line installer for Windows
-# Usage: irm https://compressx.asmith.media/install.ps1 | iex
+# Usage: powershell -c "irm https://compressx.asmith.media/install.ps1 | iex"
 
 $ErrorActionPreference = "Stop"
 
