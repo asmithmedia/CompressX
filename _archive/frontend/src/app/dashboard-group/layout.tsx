@@ -27,6 +27,7 @@ export default async function DashboardLayout({
           <SidebarLink href="/dashboard" label="Dashboard" />
           <SidebarLink href="/compress" label="New Compression" />
           <SidebarLink href="/history" label="History" />
+          <SidebarLink href="/settings" label="Settings" />
         </nav>
 
         <div className="p-4 border-t border-gray-800">

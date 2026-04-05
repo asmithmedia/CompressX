@@ -13,8 +13,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CompressX - LLM Model Compression",
-  description: "Compress LLM models to smaller, efficient sizes for local deployment",
+  title: "CompressX · A. Smith Labs",
+  description:
+    "Compress LLM models for Ollama in one command. Keeps your originals, adds a -cx variant. An A. Smith Labs product by A. Smith Media.",
+  authors: [{ name: "A. Smith Media", url: "https://asmith.media" }],
+  creator: "A. Smith Media",
+  publisher: "A. Smith Labs",
+  openGraph: {
+    title: "CompressX · A. Smith Labs",
+    description:
+      "Compress LLM models for Ollama in one command. Keeps your originals, adds a -cx variant.",
+    siteName: "CompressX",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

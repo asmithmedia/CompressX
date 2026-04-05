@@ -1,18 +1,36 @@
 {
   "name": "compressx-mcp",
   "version": "0.1.0",
-  "description": "MCP Server for CompressX - LLM model compression for Claude Code, Cursor, and other AI tools",
+  "description": "MCP server for CompressX — lets Claude Code, Cursor, and other AI tools compress LLM models via the Model Context Protocol.",
   "type": "module",
   "bin": {
     "compressx-mcp": "./dist/index.js"
   },
   "main": "./dist/index.js",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsx src/index.ts"
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": ["mcp", "llm", "compression", "gguf", "ollama", "claude-code", "cursor"],
-  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "llm",
+    "compression",
+    "gguf",
+    "ollama",
+    "claude-code",
+    "cursor",
+    "ai-tools"
+  ],
+  "author": "A. Smith Media",
+  "license": "UNLICENSED",
+  "homepage": "https://compressx-wheat.vercel.app",
   "engines": {
     "node": ">=18"
   },
@@ -21,8 +39,9 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.5.1",
     "tsx": "^4.0.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^5.0.0"
   }
 }

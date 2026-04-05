@@ -6,15 +6,23 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="border-b border-gray-900 px-6 py-4">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-cyan-500 rounded-md flex items-center justify-center font-bold text-black text-sm">
               cx
             </div>
-            <span className="text-lg font-bold">CompressX</span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-lg font-bold">CompressX</span>
+              <a
+                href="https://asmith.media/labs"
+                className="text-[10px] text-gray-500 hover:text-gray-300 transition font-sans"
+              >
+                an A. Smith Labs product
+              </a>
+            </div>
           </div>
           <div className="flex gap-6 text-sm">
-            <a href="https://github.com/asmithmedia/CompressX" className="text-gray-400 hover:text-white transition">
-              GitHub
+            <a href="#how-it-works" className="text-gray-400 hover:text-white transition">
+              How it works
             </a>
             <a href="#docs" className="text-gray-400 hover:text-white transition">
               Docs
@@ -70,12 +78,12 @@ export default function LandingPage() {
           >
             How it works
           </Link>
-          <a
-            href="https://github.com/asmithmedia/CompressX"
+          <Link
+            href="#docs"
             className="px-5 py-2 border border-gray-800 rounded-md hover:border-gray-600 transition"
           >
-            View on GitHub
-          </a>
+            View commands
+          </Link>
         </div>
       </section>
 
@@ -227,15 +235,36 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-900 px-6 py-8 font-sans">
-        <div className="max-w-5xl mx-auto flex justify-between items-center text-gray-600 text-xs">
-          <span>CompressX - MIT License</span>
-          <div className="flex gap-5">
-            <a href="https://github.com/asmithmedia/CompressX" className="hover:text-gray-300">
-              GitHub
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 text-gray-600 text-xs">
+          <div className="flex items-center gap-2">
+            <span>CompressX</span>
+            <span className="text-gray-700">·</span>
+            <span>an</span>
+            <a
+              href="https://asmith.media/labs"
+              className="text-gray-500 hover:text-gray-300 transition"
+            >
+              A. Smith Labs
             </a>
-            <Link href="/login" className="hover:text-gray-300">
-              Cloud Login
-            </Link>
+            <span>product</span>
+            <span className="text-gray-700">·</span>
+            <span>
+              ©{" "}
+              <a
+                href="https://asmith.media"
+                className="text-gray-500 hover:text-gray-300 transition"
+              >
+                A. Smith Media
+              </a>
+            </span>
+          </div>
+          <div className="flex gap-5">
+            <a href="#how-it-works" className="hover:text-gray-300">
+              How it works
+            </a>
+            <a href="#docs" className="hover:text-gray-300">
+              Docs
+            </a>
           </div>
         </div>
       </footer>

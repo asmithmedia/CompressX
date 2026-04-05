@@ -1,8 +1,8 @@
 import chalk from "chalk";
-import { createInterface } from "readline/promises";
-import { homedir } from "os";
-import { mkdirSync, writeFileSync } from "fs";
-import { join } from "path";
+import { createInterface } from "node:readline/promises";
+import { homedir } from "node:os";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 export async function loginCommand() {
   console.log(chalk.bold("\n  CompressX Login\n"));

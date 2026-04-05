@@ -59,3 +59,9 @@ coverage/
 .coverage
 htmlcov/
 test-output/
+
+# CLI build output (rebuilt on publish via prepublishOnly)
+compressx-cli/dist/
+compressx-mcp/dist/
+compressx-cli/*.tgz
+compressx-mcp/*.tgz

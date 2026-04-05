@@ -192,29 +192,160 @@ export default function JobProgressPage() {
         </div>
       )}
 
-      {/* Download */}
+      {/* Download & Deploy */}
       {isComplete && finalDownloadUrl && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">
-            Download Your Model
-          </h2>
-          <div className="flex items-center gap-4">
-            <a
-              href={finalDownloadUrl}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition inline-flex items-center gap-2"
-            >
-              Download GGUF File
-            </a>
-            <span className="text-gray-400 text-sm">
-              {job?.outputFilename}
-            </span>
+        <div className="space-y-6">
+          {/* Download */}
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">
+              Download Your Model
+            </h2>
+            <div className="flex items-center gap-4">
+              <a
+                href={finalDownloadUrl}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition inline-flex items-center gap-2"
+              >
+                Download GGUF File
+              </a>
+              <span className="text-gray-400 text-sm">
+                {job?.outputFilename}
+              </span>
+            </div>
+            <p className="text-gray-500 text-sm mt-3">
+              This download link expires in 24 hours.
+            </p>
           </div>
-          <p className="text-gray-500 text-sm mt-3">
-            This download link expires in 24 hours. Load this file in Ollama,
-            llama.cpp, or LM Studio.
-          </p>
+
+          {/* Ollama Deployment */}
+          <OllamaDeployment
+            filename={job?.outputFilename || "model.gguf"}
+            modelName={job?.sourceModelName || job?.sourceModelId || "model"}
+            quantType={
+              (job?.config as Record<string, string>)?.quant_type || "q4_k_m"
+            }
+          />
         </div>
       )}
+    </div>
+  );
+}
+
+function OllamaDeployment({
+  filename,
+  modelName,
+  quantType,
+}: {
+  filename: string;
+  modelName: string;
+  quantType: string;
+}) {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  // Generate a clean Ollama model name from the source
+  const ollamaModelName = modelName
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .substring(0, 30);
+
+  const modelfileName = `${ollamaModelName}-${quantType}`;
+
+  const modelfileContent = `# Modelfile for ${modelName} (${quantType.toUpperCase()})
+# Compressed with CompressX
+FROM ./${filename}
+
+# Customize the system prompt (optional)
+SYSTEM """You are a helpful assistant."""
+
+# Parameters (adjust as needed)
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+PARAMETER num_ctx 4096
+`;
+
+  const deployCommands = `# 1. Save the Modelfile (copy the content above)
+cat > Modelfile << 'EOF'
+${modelfileContent}EOF
+
+# 2. Create the Ollama model
+ollama create ${modelfileName} -f Modelfile
+
+# 3. Run it!
+ollama run ${modelfileName}`;
+
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <h2 className="text-lg font-semibold text-white mb-2">
+        Deploy to Ollama
+      </h2>
+      <p className="text-gray-400 text-sm mb-4">
+        Run your compressed model locally with Ollama in 3 steps.
+      </p>
+
+      {/* Modelfile */}
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium text-gray-300">
+            Modelfile
+          </span>
+          <button
+            onClick={() => copyToClipboard(modelfileContent, "modelfile")}
+            className="text-xs text-blue-400 hover:text-blue-300 transition"
+          >
+            {copied === "modelfile" ? "Copied!" : "Copy"}
+          </button>
+        </div>
+        <pre className="bg-gray-800 border border-gray-700 rounded-lg p-4 text-sm text-green-400 font-mono overflow-x-auto whitespace-pre">
+          {modelfileContent}
+        </pre>
+      </div>
+
+      {/* Commands */}
+      <div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium text-gray-300">
+            Terminal Commands
+          </span>
+          <button
+            onClick={() => copyToClipboard(deployCommands, "commands")}
+            className="text-xs text-blue-400 hover:text-blue-300 transition"
+          >
+            {copied === "commands" ? "Copied!" : "Copy All"}
+          </button>
+        </div>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">
+              1. Create the Ollama model
+            </div>
+            <code className="text-sm text-green-400 font-mono">
+              ollama create {modelfileName} -f Modelfile
+            </code>
+          </div>
+          <div>
+            <div className="text-xs text-gray-500 mb-1">2. Run it</div>
+            <code className="text-sm text-green-400 font-mono">
+              ollama run {modelfileName}
+            </code>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick tips */}
+      <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+        <div className="text-sm text-blue-400">
+          <strong>Tip:</strong> Place the downloaded GGUF file and Modelfile in
+          the same directory before running{" "}
+          <code className="bg-blue-500/20 px-1 rounded">ollama create</code>.
+        </div>
+      </div>
     </div>
   );
 }
