@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InstallTabs } from "@/components/install-tabs";
 
 export default function LandingPage() {
   return (
@@ -50,25 +51,9 @@ export default function LandingPage() {
           suffix.
         </p>
 
-        {/* Install command */}
-        <div className="max-w-2xl mx-auto mb-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-1">
-            <div className="flex items-center justify-between bg-black rounded-md px-4 py-3">
-              <code className="text-sm text-green-400 text-left overflow-x-auto">
-                <span className="text-gray-600">$ </span>
-                curl -fsSL compressx.asmith.media/install.sh | sh
-              </code>
-              <button
-                className="ml-4 text-xs text-gray-500 hover:text-white transition"
-                aria-label="Copy install command"
-              >
-                copy
-              </button>
-            </div>
-          </div>
-          <div className="text-xs text-gray-600 mt-2">
-            Windows: <code>irm compressx.asmith.media/install.ps1 | iex</code>
-          </div>
+        {/* Install command — OS tabs */}
+        <div className="mb-8">
+          <InstallTabs />
         </div>
 
         <div className="flex gap-3 justify-center text-sm">
@@ -222,15 +207,8 @@ export default function LandingPage() {
 
       {/* Final CTA */}
       <section className="max-w-3xl mx-auto px-6 py-24 text-center font-sans border-t border-gray-900">
-        <h2 className="text-3xl font-bold mb-4">Shrink your models in 30 seconds.</h2>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-1 max-w-xl mx-auto mt-8">
-          <div className="bg-black rounded-md px-4 py-3">
-            <code className="text-sm text-green-400">
-              <span className="text-gray-600">$ </span>
-              curl -fsSL compressx.asmith.media/install.sh | sh
-            </code>
-          </div>
-        </div>
+        <h2 className="text-3xl font-bold mb-8">Shrink your models in 30 seconds.</h2>
+        <InstallTabs />
       </section>
 
       {/* Footer */}

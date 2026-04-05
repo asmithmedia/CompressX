@@ -75,7 +75,12 @@
       "Bash(mv \"frontend/src/hooks/useHardwareDetection.ts\" \"_archive/frontend/src/hooks/useHardwareDetection.ts\")",
       "Bash(mv \"frontend/src/types\" \"_archive/frontend/src/types\")",
       "mcp__d6b52eb3-752b-4a57-8a28-35c24f433d19__check_domain_availability_and_price",
-      "Bash(node dist/compressx.js --version)"
+      "Bash(node dist/compressx.js --version)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://compressx.asmith.media)",
+      "Bash(nslookup compressx.asmith.media)",
+      "Bash(nslookup compressx.asmith.media 8.8.8.8)",
+      "Bash(curl -v https://compressx.asmith.media)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }
