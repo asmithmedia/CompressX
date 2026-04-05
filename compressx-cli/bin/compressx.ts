@@ -10,7 +10,7 @@ import { uninstallCommand } from "../src/commands/uninstall.js";
 import { previewCommand } from "../src/commands/preview.js";
 import { checkForUpdatesSync, printUpdateBanner } from "../src/core/update-notifier.js";
 
-const VERSION = "0.5.1";
+const VERSION = "0.6.0";
 
 program
   .name("compressx")

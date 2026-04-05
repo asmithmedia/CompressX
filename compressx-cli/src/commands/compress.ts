@@ -1,5 +1,14 @@
-import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync, statSync, unlinkSync, copyFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  statSync,
+  unlinkSync,
+  copyFileSync,
+  rmSync,
+  renameSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import chalk from "chalk";
 import ora from "ora";
@@ -10,8 +19,10 @@ import { findLlamaCpp } from "../core/llama-cpp.js";
 import { generateModelfile } from "../core/modelfile-generator.js";
 import { getDeploymentTarget, type DeploymentContext } from "../core/deployment/index.js";
 import { findLocalBlob } from "../core/ollama-blob-finder.js";
-import { listOllamaModels, isThinkingModel } from "../core/ollama-client.js";
+import { listOllamaModels, isThinkingModel, toCxName } from "../core/ollama-client.js";
 import { canRequantize, normalizeQuant } from "../core/quant-compat.js";
+import { setupLlamaCpp } from "../core/setup-llama-cpp.js";
+import { runSmokeTest, printSmokeFailureHelp } from "../core/smoke-test.js";
 
 /**
  * Quants that are known to break thinking/reasoning models like Qwen3,
@@ -129,15 +140,27 @@ export async function compressCommand(modelId: string, options: CompressOptions)
     }
   }
 
-  // Build deployment context early
+  // Build deployment context. We do all the actual work in a temp
+  // workdir inside the output directory, and only promote the finished
+  // GGUF file to the final path on success. If compression fails or is
+  // interrupted, the cleanup in finally removes the partial state so
+  // the output directory never has half-finished files.
   const outputDir = resolve(options.output);
   mkdirSync(outputDir, { recursive: true });
   const modelSlug = model.ollamaId.replace(/[:/]/g, "-");
   const outputFilename = `${modelSlug}-${quantType}.gguf`;
   const outputPath = join(outputDir, outputFilename);
-  const f16Path = join(outputDir, `${modelSlug}-f16.gguf`);
-  const downloadDir = join(outputDir, `${modelSlug}-source`);
 
+  const workDir = join(outputDir, `.compressx-tmp-${modelSlug}-${Date.now()}`);
+  const tmpOutputPath = join(workDir, outputFilename);
+  const f16Path = join(workDir, `${modelSlug}-f16.gguf`);
+  const downloadDir = join(workDir, "source");
+  mkdirSync(workDir, { recursive: true });
+
+  // The ctx passed to deployment targets uses the FINAL paths, since
+  // those are what the user sees and what the targets need for
+  // registration. The pipeline works in workDir, then we atomically
+  // rename the finished GGUF into place before calling target.register().
   const ctx: DeploymentContext = {
     ollamaId: model.ollamaId,
     modelName: model.name,
@@ -182,77 +205,113 @@ export async function compressCommand(modelId: string, options: CompressOptions)
     }
   }
 
-  // Find llama.cpp tools
+  // Find llama.cpp tools — auto-download on first run if missing
   const toolsSpinner = ora("Checking for llama.cpp tools...").start();
-  const tools = await findLlamaCpp();
-  if (!tools.quantizeBinary) {
-    toolsSpinner.fail("llama-quantize binary not found");
-    console.log(chalk.yellow("\n  To install llama.cpp tools:"));
-    console.log(chalk.gray("    Download from https://github.com/ggerganov/llama.cpp/releases"));
-    console.log(chalk.gray("    Place llama-quantize in ~/.compressx/bin/ or on your PATH\n"));
-    process.exit(1);
+  let tools = await findLlamaCpp();
+  const needsQuantize = !tools.quantizeBinary;
+  const needsConvert = source.kind === "huggingface" && !tools.convertScript;
+
+  if (needsQuantize || needsConvert) {
+    toolsSpinner.warn("llama.cpp tools not found — downloading now (one-time setup)");
+    console.log();
+    const success = await setupLlamaCpp();
+    if (!success) {
+      console.error(chalk.red("\n  Setup failed. You can install llama.cpp manually:"));
+      console.error(chalk.gray("    https://github.com/ggerganov/llama.cpp/releases"));
+      console.error(chalk.gray("    Unpack into ~/.compressx/bin/llama-bin/\n"));
+      process.exit(1);
+    }
+    // Re-check after setup
+    tools = await findLlamaCpp();
+    if (!tools.quantizeBinary) {
+      console.error(
+        chalk.red("\n  llama-quantize still not found after setup. Please report this issue.\n"),
+      );
+      process.exit(1);
+    }
+    if (source.kind === "huggingface" && !tools.convertScript) {
+      console.error(
+        chalk.red(
+          "\n  convert_hf_to_gguf.py still not found. Try --from-source later or report this.\n",
+        ),
+      );
+      process.exit(1);
+    }
+  } else {
+    toolsSpinner.succeed("llama.cpp tools ready");
   }
-  if (source.kind === "huggingface" && !tools.convertScript) {
-    toolsSpinner.fail("convert_hf_to_gguf.py not found (needed for HuggingFace path)");
-    console.log(chalk.yellow("\n  The HuggingFace download path needs the convert script:"));
-    console.log(chalk.gray("    Download convert_hf_to_gguf.py from llama.cpp releases"));
-    console.log(chalk.gray("    Place it in ~/.compressx/bin/ or on your PATH\n"));
-    console.log(chalk.gray("  Or if the model is already in Ollama, skip --from-source."));
-    process.exit(1);
-  }
-  toolsSpinner.succeed("llama.cpp tools ready");
 
   console.log();
 
-  // Execute the chosen path
-  if (source.kind === "local") {
-    await runLocalPath(source, quantType, outputPath, tools.quantizeBinary);
-  } else {
-    await runHuggingFacePath(
-      model.hfRepoId,
-      downloadDir,
-      f16Path,
-      outputPath,
-      quantType,
-      tools.convertScript!,
-      tools.quantizeBinary,
-    );
-  }
-
-  // Generate Modelfile. When the source model exists in Ollama, we
-  // inherit its TEMPLATE/SYSTEM/PARAMETER directives so the compressed
-  // variant keeps the correct chat format (Qwen3, Llama 3, Gemma, etc.
-  // all have custom templates that matter). Otherwise fall back to a
-  // minimal generic Modelfile.
-  const modelfileContent = generateModelfile(
-    outputFilename,
-    model.name,
-    quantType,
-    source.kind === "local" ? model.ollamaId : undefined,
-  );
-  writeFileSync(join(outputDir, "Modelfile"), modelfileContent);
-
-  // Step 4: Deploy to target
-  console.log(chalk.bold(`\n  Deploying to ${target.name}...`));
-  if (!precheck.ok) {
-    console.log(chalk.yellow(`  Skipped: ${precheck.message || "target not available"}`));
-  } else {
-    const deploySpinner = ora(`Installing for ${target.name}...`).start();
-    try {
-      await target.register(ctx);
-      deploySpinner.succeed(`Deployed to ${chalk.green(target.name)}`);
-    } catch (err) {
-      deploySpinner.fail(`${target.name} deployment failed`);
-      console.log(chalk.gray(`  ${err instanceof Error ? err.message : String(err)}`));
+  // Everything past this point runs inside a try/finally so a crash,
+  // OOM, timeout, or ^C leaves no partial files behind.
+  let pipelineSucceeded = false;
+  try {
+    // Execute the chosen path — writes to tmpOutputPath inside workDir
+    if (source.kind === "local") {
+      await runLocalPath(source, quantType, tmpOutputPath, tools.quantizeBinary);
+    } else {
+      await runHuggingFacePath(
+        model.hfRepoId,
+        downloadDir,
+        f16Path,
+        tmpOutputPath,
+        quantType,
+        tools.convertScript!,
+        tools.quantizeBinary,
+      );
     }
-  }
 
-  // Cleanup source files (HuggingFace download dir only)
-  if (existsSync(downloadDir)) {
-    try {
-      execSync(`rm -rf "${downloadDir}"`, { stdio: "pipe" });
-    } catch {
-      // ignore
+    // Atomically promote the finished file to its final location.
+    // renameSync is atomic within the same filesystem, which workDir
+    // always is (it's a subdir of outputDir).
+    if (existsSync(outputPath)) {
+      unlinkSync(outputPath);
+    }
+    renameSync(tmpOutputPath, outputPath);
+
+    // Generate Modelfile. When the source model exists in Ollama, we
+    // inherit its TEMPLATE/SYSTEM/PARAMETER directives so the compressed
+    // variant keeps the correct chat format (Qwen3, Llama 3, Gemma, etc.
+    // all have custom templates that matter). Otherwise fall back to a
+    // minimal generic Modelfile.
+    const modelfileContent = generateModelfile(
+      outputFilename,
+      model.name,
+      quantType,
+      source.kind === "local" ? model.ollamaId : undefined,
+    );
+    writeFileSync(join(outputDir, "Modelfile"), modelfileContent);
+
+    // Step 4: Deploy to target
+    console.log(chalk.bold(`\n  Deploying to ${target.name}...`));
+    if (!precheck.ok) {
+      console.log(chalk.yellow(`  Skipped: ${precheck.message || "target not available"}`));
+    } else {
+      const deploySpinner = ora(`Installing for ${target.name}...`).start();
+      try {
+        await target.register(ctx);
+        deploySpinner.succeed(`Deployed to ${chalk.green(target.name)}`);
+      } catch (err) {
+        deploySpinner.fail(`${target.name} deployment failed`);
+        console.log(chalk.gray(`  ${err instanceof Error ? err.message : String(err)}`));
+      }
+    }
+
+    pipelineSucceeded = true;
+  } finally {
+    // Always clean up the temp workdir, success or failure. If the
+    // pipeline failed, this also removes any partially-written GGUF
+    // files so the output directory stays clean.
+    if (existsSync(workDir)) {
+      try {
+        rmSync(workDir, { recursive: true, force: true });
+      } catch {
+        // ignore — worst case we leave a tmp dir behind, not fatal
+      }
+    }
+    if (!pipelineSucceeded) {
+      console.log(chalk.gray("\n  Cleaned up partial files from failed compression.\n"));
     }
   }
 
@@ -277,6 +336,20 @@ export async function compressCommand(modelId: string, options: CompressOptions)
     console.log();
     for (const line of extraLines) {
       console.log(`  ${chalk.gray(line)}`);
+    }
+  }
+
+  // Post-compression smoke test — only for Ollama target, since that's
+  // the only one we can run inference against without help from the user.
+  // The test catches broken templates (v0.5.0 bug), over-quantization
+  // repetition (qwen3:8b @ Q2_K bug), and tokenizer mismatches BEFORE
+  // the user discovers them in production.
+  if (target.id === "ollama" && precheck.ok) {
+    console.log();
+    const cxName = toCxName(model.ollamaId);
+    const smokeResult = await runSmokeTest(cxName);
+    if (!smokeResult.ok) {
+      printSmokeFailureHelp(cxName, model.ollamaId, quantType, smokeResult);
     }
   }
 
@@ -370,27 +443,32 @@ async function runLocalPath(
   console.log(chalk.bold(`  [1/1] Re-quantizing local blob to ${targetQuant.toUpperCase()}...`));
   const quantSpinner = ora("Quantizing...").start();
 
-  try {
-    // --allow-requantize is required when the source is already quantized
-    // (e.g. Q4_K_M). llama.cpp warns that this can reduce quality compared
-    // to quantizing from 16/32-bit, which is exactly what we flagged in
-    // the compat warning above.
-    execSync(
-      `"${quantizeBinary}" --allow-requantize "${source.blobPath}" "${outputPath}" ${targetQuant}`,
-      {
-        stdio: "pipe",
-        timeout: 7200000,
-      },
-    );
-    quantSpinner.succeed(`Re-quantized to ${targetQuant.toUpperCase()}`);
-  } catch (err) {
+  // --allow-requantize is required when the source is already quantized
+  // (e.g. Q4_K_M). llama.cpp warns that this can reduce quality compared
+  // to quantizing from 16/32-bit, which is exactly what we flagged in
+  // the compat warning above.
+  //
+  // spawnSync with array args is injection-safe: targetQuant comes from
+  // --quant CLI input, and even if someone passed `q2_k; rm -rf ~`, it
+  // would be treated as a single argument and rejected by llama-quantize.
+  const result = spawnSync(
+    quantizeBinary,
+    ["--allow-requantize", source.blobPath, outputPath, targetQuant],
+    { stdio: "pipe", timeout: 7200000 },
+  );
+
+  if (result.status !== 0) {
     quantSpinner.fail("Quantization failed");
-    console.error(chalk.red(String(err)));
+    const stderr = result.stderr?.toString() || "";
+    const stdout = result.stdout?.toString() || "";
+    console.error(chalk.red(stderr || stdout || "unknown error"));
     console.log(
       chalk.gray("\n  Try --from-source to download original weights instead.\n"),
     );
     process.exit(1);
   }
+
+  quantSpinner.succeed(`Re-quantized to ${targetQuant.toUpperCase()}`);
 }
 
 /**
@@ -409,12 +487,23 @@ async function runHuggingFacePath(
 ) {
   console.log(chalk.bold("  [1/3] Downloading original weights..."));
   mkdirSync(downloadDir, { recursive: true });
-  try {
-    execSync(
-      `python -c "from huggingface_hub import snapshot_download; snapshot_download('${hfRepoId}', local_dir='${downloadDir.replace(/\\/g, "/")}')"`,
-      { stdio: "inherit", timeout: 3600000 },
-    );
-  } catch {
+
+  // Using a Python one-liner is still the simplest way to invoke
+  // huggingface_hub's snapshot_download. We pass the script body as a
+  // single argument via `-c`, so hfRepoId and downloadDir are inside a
+  // Python string literal — not a shell-interpolated string. This is
+  // safe from shell injection but would be vulnerable to Python string
+  // injection if hfRepoId contained single quotes. Validate input here:
+  if (!/^[\w./\-]+$/.test(hfRepoId)) {
+    console.error(chalk.red(`\n  Invalid repository id: "${hfRepoId}"`));
+    process.exit(1);
+  }
+  const pyScript = `from huggingface_hub import snapshot_download; snapshot_download('${hfRepoId}', local_dir=r'${downloadDir}')`;
+  const dlResult = spawnSync("python", ["-c", pyScript], {
+    stdio: "inherit",
+    timeout: 3600000,
+  });
+  if (dlResult.status !== 0) {
     console.error(chalk.red("\n  Download failed. The huggingface_hub Python package is required:"));
     console.log(chalk.gray("    pip install huggingface_hub\n"));
     process.exit(1);
@@ -422,34 +511,35 @@ async function runHuggingFacePath(
 
   console.log(chalk.bold("\n  [2/3] Converting to GGUF FP16..."));
   const convertSpinner = ora("Converting...").start();
-  try {
-    execSync(`python "${convertScript}" "${downloadDir}" --outfile "${f16Path}" --outtype f16`, {
-      stdio: "pipe",
-      timeout: 3600000,
-    });
-    convertSpinner.succeed("FP16 GGUF ready");
-  } catch (err) {
+  const convertResult = spawnSync(
+    "python",
+    [convertScript, downloadDir, "--outfile", f16Path, "--outtype", "f16"],
+    { stdio: "pipe", timeout: 3600000 },
+  );
+  if (convertResult.status !== 0) {
     convertSpinner.fail("Conversion failed");
-    console.error(chalk.red(String(err)));
+    console.error(chalk.red(convertResult.stderr?.toString() || "unknown error"));
     process.exit(1);
   }
+  convertSpinner.succeed("FP16 GGUF ready");
 
   console.log(chalk.bold(`\n  [3/3] Quantizing to ${targetQuant.toUpperCase()}...`));
   const quantSpinner = ora("Quantizing...").start();
-  try {
-    if (targetQuant === "f16") {
-      copyFileSync(f16Path, outputPath);
-    } else {
-      execSync(`"${quantizeBinary}" "${f16Path}" "${outputPath}" ${targetQuant}`, {
-        stdio: "pipe",
-        timeout: 7200000,
-      });
+
+  if (targetQuant === "f16") {
+    copyFileSync(f16Path, outputPath);
+  } else {
+    const quantResult = spawnSync(quantizeBinary, [f16Path, outputPath, targetQuant], {
+      stdio: "pipe",
+      timeout: 7200000,
+    });
+    if (quantResult.status !== 0) {
+      quantSpinner.fail("Quantization failed");
+      console.error(chalk.red(quantResult.stderr?.toString() || "unknown error"));
+      process.exit(1);
     }
-    if (existsSync(f16Path) && targetQuant !== "f16") unlinkSync(f16Path);
-    quantSpinner.succeed(`Quantized to ${targetQuant.toUpperCase()}`);
-  } catch (err) {
-    quantSpinner.fail("Quantization failed");
-    console.error(chalk.red(String(err)));
-    process.exit(1);
   }
+
+  if (existsSync(f16Path) && targetQuant !== "f16") unlinkSync(f16Path);
+  quantSpinner.succeed(`Quantized to ${targetQuant.toUpperCase()}`);
 }

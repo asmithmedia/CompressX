@@ -104,6 +104,12 @@ export async function scanCommand(options: ScanOptions = {}) {
 
   for (const m of installed) {
     if (m.name.endsWith("-cx")) continue;
+    // Skip Ollama cloud models — they're API-backed, not local files, and
+    // their reported size is 0. The synthetic fallback would happily parse
+    // "671b" from the tag but compressing a cloud model makes no sense.
+    if (m.name.endsWith(":cloud") || m.name.includes("-cloud")) continue;
+    if (m.size === 0) continue;
+
     const baseName = m.name.split(":")[0];
     const resolved = resolveModel(m.name) || resolveModel(baseName);
     if (!resolved || resolved.parametersBillion === 0) continue;

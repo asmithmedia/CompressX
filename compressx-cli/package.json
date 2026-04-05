@@ -1,6 +1,6 @@
 {
   "name": "compressx",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Compress LLM models for Ollama in one command. Keeps your originals, adds a -cx variant. Hardware-aware, fully local, no account required.",
   "type": "module",
   "bin": {
@@ -15,7 +15,9 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx bin/compressx.ts",
-    "prepublishOnly": "npm run build"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run test && npm run build"
   },
   "keywords": [
     "llm",
@@ -46,6 +48,7 @@
     "@types/node": "^20.0.0",
     "tsup": "^8.5.1",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.2"
   }
 }

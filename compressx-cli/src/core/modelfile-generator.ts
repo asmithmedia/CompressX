@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 
 /**
  * Ask Ollama for the full Modelfile of an existing model, strip the
@@ -18,13 +18,17 @@ import { execSync } from "node:child_process";
  * Modelfile to copy from).
  */
 export function getSourceModelfile(ollamaId: string): string | null {
+  // Reject anything that isn't a valid Ollama model name so it can't
+  // be used to pass extra flags to `ollama show`.
+  if (!/^[\w.:\-/]+$/.test(ollamaId)) return null;
   try {
-    const output = execSync(`ollama show --modelfile ${ollamaId}`, {
+    const result = spawnSync("ollama", ["show", "--modelfile", ollamaId], {
       encoding: "utf-8",
       timeout: 10000,
       stdio: ["pipe", "pipe", "pipe"],
     });
-    return output;
+    if (result.status !== 0) return null;
+    return result.stdout || null;
   } catch {
     return null;
   }

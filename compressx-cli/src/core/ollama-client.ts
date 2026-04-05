@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 
 const OLLAMA_URL = process.env.OLLAMA_HOST || "http://localhost:11434";
 
@@ -54,15 +54,21 @@ export function toCxName(ollamaId: string): string {
  * Create an Ollama model from a GGUF file + Modelfile directory.
  * Runs `ollama create <name> -f Modelfile` in the given directory.
  */
-export function createOllamaModel(
-  cxName: string,
-  modelfileDir: string
-): void {
-  execSync(`ollama create ${cxName} -f Modelfile`, {
+export function createOllamaModel(cxName: string, modelfileDir: string): void {
+  // Validate the name: Ollama names are letters, digits, dots, dashes,
+  // underscores, colons, and slashes. Reject anything else so a
+  // pathological cxName can't inject flags or shell tokens.
+  if (!/^[\w.:\-/]+$/.test(cxName)) {
+    throw new Error(`Invalid Ollama model name: "${cxName}"`);
+  }
+  const result = spawnSync("ollama", ["create", cxName, "-f", "Modelfile"], {
     cwd: modelfileDir,
     stdio: "inherit",
     timeout: 600000,
   });
+  if (result.status !== 0) {
+    throw new Error(`ollama create exited with code ${result.status}`);
+  }
 }
 
 /**
