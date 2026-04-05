@@ -77,11 +77,18 @@ export default function LandingPage() {
         <div className="bg-gray-950 border border-gray-900 rounded-lg p-5">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 rounded px-2 py-0.5">
-              NEW · v0.6
+              NEW · v0.6.1
             </span>
             <span className="text-xs text-gray-500">Hardening release</span>
           </div>
-          <div className="grid md:grid-cols-3 gap-4 text-xs">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            <div>
+              <div className="text-white font-bold mb-1">Live progress bar</div>
+              <p className="text-gray-500">
+                Real-time per-tensor progress with percent and ETA while
+                quantization runs. No more wondering if it hung.
+              </p>
+            </div>
             <div>
               <div className="text-white font-bold mb-1">Self-installing</div>
               <p className="text-gray-500">
@@ -147,6 +154,13 @@ export default function LandingPage() {
             <div className="text-green-400">    ❯ ◉ qwen3:14b</div>
             <div className="text-green-400">      ◉ gemma4:12b</div>
             <div className="text-gray-600">      ◯ llama3.1:8b</div>
+            <div className="text-white mt-3">  [1/1] Re-quantizing local blob to Q3_K_M...</div>
+            <div className="mt-1 text-xs">
+              <span className="text-green-400">  ████████████████</span>
+              <span className="text-gray-700">░░░░░░░░░░░░  </span>
+              <span className="text-white font-bold">58.2%  </span>
+              <span className="text-gray-500">169/291 tensors  0:14 elapsed  eta 0:10</span>
+            </div>
             <div className="text-gray-500 mt-3">  Using local Ollama blobs. <span className="text-green-400">~30 sec each, zero download.</span></div>
           </div>
         </div>
