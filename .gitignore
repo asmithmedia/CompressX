@@ -58,3 +58,4 @@ frontend/prisma/migrations/
 coverage/
 .coverage
 htmlcov/
+test-output/
