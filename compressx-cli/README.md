@@ -1,8 +1,8 @@
 # CompressX
 
-**Compress LLMs. Keep the originals.**
+**Compress LLMs. Keep the originals. Deploy anywhere.**
 
-One command to shrink every model in your Ollama library. Originals stay intact — compressed versions get a `-cx` suffix.
+One command to shrink LLM models for any GGUF-compatible runtime — Ollama, LM Studio, llama.cpp, Jan, GPT4All, Msty, text-generation-webui, and more. Originals stay intact — compressed versions get a `-cx` suffix.
 
 ```bash
 npm install -g compressx
@@ -14,14 +14,23 @@ npm install -g compressx
 # Scan your Ollama library and suggest compressions
 compressx
 
+# Preview all quant levels for any model without compressing
+compressx preview qwen3:14b
+
 # Compress a specific model to the auto-recommended quant level
 compressx compress qwen3:4b
+
+# Deploy to LM Studio instead of Ollama
+compressx compress qwen3:4b --target lmstudio
+
+# Just produce a GGUF file (for llama.cpp, Jan, GPT4All, Msty, etc.)
+compressx compress qwen3:4b --target gguf
 
 # Show your hardware
 compressx hardware
 ```
 
-After compression:
+After compression (Ollama, default target):
 
 ```bash
 ollama list
@@ -31,11 +40,22 @@ ollama list
 ollama run qwen3:4b-cx
 ```
 
+## Deployment Targets
+
+Compress once, deploy anywhere. Choose your target with `--target`:
+
+| Target | Where it puts the GGUF | Use for |
+|---|---|---|
+| `ollama` *(default)* | Registered as `<name>-cx` in your Ollama library | Ollama users |
+| `lmstudio` | `~/.lmstudio/models/<Publisher>/<Repo>/<file>.gguf` | LM Studio users |
+| `gguf` | Left in the `--output` directory | llama.cpp, Jan, GPT4All, Msty, text-gen-webui, koboldcpp, anyone else |
+
 ## How It Works
 
-1. **Scan.** `compressx` detects your GPU and RAM, queries your local Ollama, and identifies models that could be smaller.
-2. **Compress.** Downloads the original unquantized weights from HuggingFace, runs GGUF quantization locally via `llama.cpp`. No cloud. No uploads. No account.
-3. **Register.** The compressed model is auto-registered in Ollama with a `:tag-cx` suffix. Your originals are never modified.
+1. **Scan.** `compressx` detects your GPU and RAM, queries your local Ollama, and identifies models that could be smaller. On well-equipped machines, run `compressx --all` to see every installed model anyway.
+2. **Preview.** Run `compressx preview <model>` to see every quant level side-by-side with estimated size, compression ratio, and VRAM fit — no download, no compression.
+3. **Compress.** Downloads the original unquantized weights from HuggingFace, runs GGUF quantization locally via `llama.cpp`. No cloud. No uploads. No account.
+4. **Deploy.** Hands the compressed file to your chosen runtime. Originals are never modified.
 
 ## Why CompressX?
 
@@ -49,8 +69,12 @@ ollama run qwen3:4b-cx
 | Command | Description |
 |---|---|
 | `compressx` | Scan Ollama library and interactively compress models |
+| `compressx --all` | Show all installed models, including ones that already fit your hardware |
+| `compressx preview <model>` | Preview every quant level for a model without compressing |
 | `compressx compress <model>` | Compress a specific model with auto-recommended quant |
 | `compressx compress <model> -q q4_k_m` | Compress with a specific quantization type |
+| `compressx compress <model> --target lmstudio` | Deploy to LM Studio instead of Ollama |
+| `compressx compress <model> --target gguf` | Produce a plain GGUF file (any runtime) |
 | `compressx hardware` | Show detected GPU, VRAM, RAM, and max model size |
 | `compressx models` | List all supported models |
 | `compressx update` | Update CompressX to the latest version |

@@ -84,7 +84,21 @@
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://compressx-wheat.vercel.app)",
       "Bash(curl -s https://compressx.asmith.media/install.ps1)",
       "Bash(curl -s https://compressx.asmith.media/_next/static/chunks/08hr7nufid-i3.js)",
-      "Bash(time node:*)"
+      "Bash(time node:*)",
+      "Bash(curl -s -o /dev/null -w \"install.sh: %{http_code}\\\\n\" https://compressx.asmith.media/install.sh)",
+      "Bash(curl -s -o /dev/null -w \"install.ps1: %{http_code}\\\\n\" https://compressx.asmith.media/install.ps1)",
+      "Bash(curl -s -o /dev/null -w \"uninstall.sh: %{http_code}\\\\n\" https://compressx.asmith.media/uninstall.sh)",
+      "Bash(curl -s -o /dev/null -w \"uninstall.ps1: %{http_code}\\\\n\" https://compressx.asmith.media/uninstall.ps1)",
+      "Bash(curl -s -o /dev/null -w \"site: %{http_code}\\\\n\" https://compressx.asmith.media)",
+      "Bash(node dist/compressx.js uninstall)",
+      "Bash(node dist/compressx.js preview qwen3:14b)",
+      "Bash(node dist/compressx.js preview qwen3:4b)",
+      "Bash(node dist/compressx.js compress --help)",
+      "Bash(node dist/compressx.js scan)",
+      "Bash(printf \"y\\\\n\\\\x03\")",
+      "Bash(printf \"\\\\x03\")",
+      "Bash(timeout 6 node dist/compressx.js scan --all)",
+      "Bash(node dist/compressx.js scan --help)"
     ]
   }
 }

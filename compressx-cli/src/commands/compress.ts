@@ -1,18 +1,13 @@
-import { execSync } from "child_process";
-import { existsSync, mkdirSync, writeFileSync, statSync, unlinkSync } from "fs";
-import { join, resolve } from "path";
+import { execSync } from "node:child_process";
+import { existsSync, mkdirSync, writeFileSync, statSync, unlinkSync } from "node:fs";
+import { join, resolve } from "node:path";
 import chalk from "chalk";
 import ora from "ora";
 import { detectHardware } from "../core/hardware-detect.js";
 import { resolveModel, recommendQuantType } from "../core/model-resolver.js";
 import { findLlamaCpp } from "../core/llama-cpp.js";
 import { generateModelfile } from "../core/modelfile-generator.js";
-import {
-  isOllamaRunning,
-  ollamaModelExists,
-  toCxName,
-  createOllamaModel,
-} from "../core/ollama-client.js";
+import { getDeploymentTarget, type DeploymentContext } from "../core/deployment/index.js";
 
 interface CompressOptions {
   quant: string;
@@ -22,6 +17,7 @@ interface CompressOptions {
   json: boolean;
   skipOllama?: boolean;
   force?: boolean;
+  target?: string;
 }
 
 export async function compressCommand(modelId: string, options: CompressOptions) {
@@ -36,8 +32,14 @@ export async function compressCommand(modelId: string, options: CompressOptions)
     console.log(chalk.yellow("Cloud compression is coming soon. Using local mode.\n"));
   }
 
-  // Compute the target Ollama name up front
-  const cxName = toCxName(model.ollamaId);
+  // Resolve deployment target (default: ollama)
+  let target;
+  try {
+    target = getDeploymentTarget(options.target || "ollama");
+  } catch (err) {
+    console.error(chalk.red(`\n  ${err instanceof Error ? err.message : String(err)}\n`));
+    process.exit(1);
+  }
 
   console.log(chalk.bold.cyan(`\n  CompressX`));
   console.log(chalk.gray(`  ${"-".repeat(50)}`));
@@ -45,26 +47,14 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   console.log(`  HuggingFace:   ${chalk.gray(model.hfRepoId)}`);
   console.log(`  Parameters:    ${chalk.gray(model.parametersBillion + "B")}`);
   console.log(`  Original size: ${chalk.gray("~" + model.fp16SizeGb + " GB (FP16)")}`);
-  console.log(`  Ollama name:   ${chalk.green(cxName)}`);
+  console.log(`  Target:        ${chalk.green(target.name)}`);
   console.log();
-
-  // Check if already exists
-  const ollamaAvailable = await isOllamaRunning();
-  if (ollamaAvailable && !options.force) {
-    const exists = await ollamaModelExists(cxName);
-    if (exists) {
-      console.log(chalk.yellow(`  ${cxName} already exists in Ollama.`));
-      console.log(chalk.gray(`  Use --force to recompress, or run:\n`));
-      console.log(chalk.cyan(`    ollama run ${cxName}\n`));
-      process.exit(0);
-    }
-  }
 
   // Detect hardware
   const hwSpinner = ora("Detecting hardware...").start();
   const hw = await detectHardware();
   hwSpinner.succeed(
-    `${hw.gpuName || "CPU-only"} | ${hw.ramGb} GB RAM${hw.vramGb ? ` | ${hw.vramGb} GB VRAM` : ""}`
+    `${hw.gpuName || "CPU-only"} | ${hw.ramGb} GB RAM${hw.vramGb ? ` | ${hw.vramGb} GB VRAM` : ""}`,
   );
 
   // Determine quantization type
@@ -74,8 +64,43 @@ export async function compressCommand(modelId: string, options: CompressOptions)
     quantType = recommended.quantType;
     console.log(
       chalk.cyan(`  Auto-selected: ${chalk.bold(quantType.toUpperCase())}`) +
-        chalk.gray(` (${recommended.label}, ~${recommended.estimatedSizeGb} GB)`)
+        chalk.gray(` (${recommended.label}, ~${recommended.estimatedSizeGb} GB)`),
     );
+  }
+
+  // Build deployment context early so targets can check existence
+  const outputDir = resolve(options.output);
+  mkdirSync(outputDir, { recursive: true });
+  const modelSlug = model.ollamaId.replace(/[:/]/g, "-");
+  const outputFilename = `${modelSlug}-${quantType}.gguf`;
+  const outputPath = join(outputDir, outputFilename);
+  const f16Path = join(outputDir, `${modelSlug}-f16.gguf`);
+  const downloadDir = join(outputDir, `${modelSlug}-source`);
+
+  const ctx: DeploymentContext = {
+    ollamaId: model.ollamaId,
+    modelName: model.name,
+    hfRepoId: model.hfRepoId,
+    quantType,
+    outputDir,
+    outputFilename,
+    outputPath,
+  };
+
+  // Target pre-check (e.g. is Ollama running, does LM Studio dir exist)
+  const precheck = await target.preCompressionCheck();
+  if (precheck.message) {
+    console.log(chalk.yellow(`  Note: ${precheck.message}`));
+  }
+
+  // Check if already exists for this target (unless --force)
+  if (!options.force) {
+    const exists = await target.modelExists(ctx);
+    if (exists) {
+      console.log(chalk.yellow(`\n  This model is already deployed to ${target.name}.`));
+      console.log(chalk.gray(`  Use --force to recompress and overwrite.\n`));
+      process.exit(0);
+    }
   }
 
   // Find llama.cpp tools
@@ -91,16 +116,6 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   }
   toolsSpinner.succeed("llama.cpp tools ready");
 
-  // Setup output
-  const outputDir = resolve(options.output);
-  mkdirSync(outputDir, { recursive: true });
-
-  const modelSlug = model.ollamaId.replace(/[:/]/g, "-");
-  const outputFilename = `${modelSlug}-${quantType}.gguf`;
-  const outputPath = join(outputDir, outputFilename);
-  const f16Path = join(outputDir, `${modelSlug}-f16.gguf`);
-  const downloadDir = join(outputDir, `${modelSlug}-source`);
-
   console.log();
 
   // Step 1: Download
@@ -109,7 +124,7 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   try {
     execSync(
       `python -c "from huggingface_hub import snapshot_download; snapshot_download('${model.hfRepoId}', local_dir='${downloadDir.replace(/\\/g, "/")}')"`,
-      { stdio: "inherit", timeout: 3600000 }
+      { stdio: "inherit", timeout: 3600000 },
     );
   } catch {
     console.error(chalk.red("\n  Download failed. Install huggingface_hub:"));
@@ -123,7 +138,7 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   try {
     execSync(
       `python "${tools.convertScript}" "${downloadDir}" --outfile "${f16Path}" --outtype f16`,
-      { stdio: "pipe", timeout: 3600000 }
+      { stdio: "pipe", timeout: 3600000 },
     );
     convertSpinner.succeed("FP16 GGUF ready");
   } catch (err) {
@@ -152,25 +167,24 @@ export async function compressCommand(modelId: string, options: CompressOptions)
     process.exit(1);
   }
 
-  // Generate Modelfile
+  // Generate Modelfile (needed for Ollama target; harmless for others)
   const modelfileContent = generateModelfile(outputFilename, model.name, quantType);
   writeFileSync(join(outputDir, "Modelfile"), modelfileContent);
 
-  // Step 4: Register with Ollama
-  console.log(chalk.bold(`\n  [4/4] Registering ${cxName} in Ollama...`));
-  if (!ollamaAvailable || options.skipOllama) {
-    console.log(chalk.yellow("  Ollama not running. Skipping registration."));
-    console.log(chalk.gray(`  To register manually:`));
-    console.log(chalk.gray(`    cd ${outputDir}`));
-    console.log(chalk.gray(`    ollama create ${cxName} -f Modelfile\n`));
+  // Step 4: Deploy to target
+  console.log(chalk.bold(`\n  [4/4] Deploying to ${target.name}...`));
+
+  if (!precheck.ok) {
+    // Target isn't usable right now — skip registration but keep the file.
+    console.log(chalk.yellow(`  Skipped: ${precheck.message || "target not available"}`));
   } else {
-    const registerSpinner = ora(`Creating ${cxName}...`).start();
+    const deploySpinner = ora(`Installing for ${target.name}...`).start();
     try {
-      createOllamaModel(cxName, outputDir);
-      registerSpinner.succeed(`Registered ${chalk.green(cxName)} in Ollama`);
+      await target.register(ctx);
+      deploySpinner.succeed(`Deployed to ${chalk.green(target.name)}`);
     } catch (err) {
-      registerSpinner.fail("Ollama registration failed");
-      console.log(chalk.gray(`  Run manually: cd ${outputDir} && ollama create ${cxName} -f Modelfile\n`));
+      deploySpinner.fail(`${target.name} deployment failed`);
+      console.log(chalk.gray(`  ${err instanceof Error ? err.message : String(err)}`));
     }
   }
 
@@ -188,10 +202,23 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   console.log(chalk.green.bold("\n  [OK] Compression complete!"));
   console.log(chalk.gray(`  ${"-".repeat(50)}`));
   console.log(`  ${chalk.gray("Original:")}    ${model.fp16SizeGb} GB`);
-  console.log(`  ${chalk.gray("Compressed:")}  ${chalk.green(finalSize.toFixed(2) + " GB")} ${chalk.gray(`(-${reduction}%)`)}`);
+  console.log(
+    `  ${chalk.gray("Compressed:")}  ${chalk.green(finalSize.toFixed(2) + " GB")} ${chalk.gray(`(-${reduction}%)`)}`,
+  );
   console.log(`  ${chalk.gray("Quant:")}       ${quantType.toUpperCase()}`);
-  console.log(`  ${chalk.gray("Ollama:")}      ${chalk.cyan(cxName)}`);
+  console.log(`  ${chalk.gray("Target:")}      ${chalk.cyan(target.name)}`);
+
+  // Target-specific extra summary
+  const extraLines = target.getExtraSummaryLines?.(ctx) || [];
+  if (extraLines.length > 0) {
+    console.log();
+    for (const line of extraLines) {
+      console.log(`  ${chalk.gray(line)}`);
+    }
+  }
+
   console.log();
   console.log(chalk.bold("  Run it now:"));
-  console.log(chalk.cyan(`    ollama run ${cxName}\n`));
+  console.log(chalk.cyan(`    ${target.getInstructions(ctx)}`));
+  console.log();
 }
