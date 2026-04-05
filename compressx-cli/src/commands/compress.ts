@@ -23,6 +23,7 @@ import { listOllamaModels, isThinkingModel, toCxName } from "../core/ollama-clie
 import { canRequantize, normalizeQuant } from "../core/quant-compat.js";
 import { setupLlamaCpp } from "../core/setup-llama-cpp.js";
 import { runSmokeTest, printSmokeFailureHelp } from "../core/smoke-test.js";
+import { runQuantizeWithProgress } from "../core/progress-quantize.js";
 
 /**
  * Quants that are known to break thinking/reasoning models like Qwen3,
@@ -440,35 +441,34 @@ async function runLocalPath(
   outputPath: string,
   quantizeBinary: string,
 ) {
-  console.log(chalk.bold(`  [1/1] Re-quantizing local blob to ${targetQuant.toUpperCase()}...`));
-  const quantSpinner = ora("Quantizing...").start();
+  console.log(
+    chalk.bold(`  [1/1] Re-quantizing local blob to ${targetQuant.toUpperCase()}...`),
+  );
 
   // --allow-requantize is required when the source is already quantized
   // (e.g. Q4_K_M). llama.cpp warns that this can reduce quality compared
   // to quantizing from 16/32-bit, which is exactly what we flagged in
   // the compat warning above.
   //
-  // spawnSync with array args is injection-safe: targetQuant comes from
-  // --quant CLI input, and even if someone passed `q2_k; rm -rf ~`, it
-  // would be treated as a single argument and rejected by llama-quantize.
-  const result = spawnSync(
-    quantizeBinary,
-    ["--allow-requantize", source.blobPath, outputPath, targetQuant],
-    { stdio: "pipe", timeout: 7200000 },
-  );
+  // runQuantizeWithProgress streams stderr and renders a live bar driven
+  // by the per-tensor "[N/M]" lines llama-quantize emits. The argument
+  // list is passed as an array so it's injection-safe by construction.
+  const result = await runQuantizeWithProgress({
+    binary: quantizeBinary,
+    args: ["--allow-requantize", source.blobPath, outputPath, targetQuant],
+    timeoutMs: 7200000,
+  });
 
   if (result.status !== 0) {
-    quantSpinner.fail("Quantization failed");
-    const stderr = result.stderr?.toString() || "";
-    const stdout = result.stdout?.toString() || "";
-    console.error(chalk.red(stderr || stdout || "unknown error"));
+    console.error(chalk.red("\n  Quantization failed:"));
+    console.error(chalk.red(result.stderr || "unknown error"));
     console.log(
       chalk.gray("\n  Try --from-source to download original weights instead.\n"),
     );
     process.exit(1);
   }
 
-  quantSpinner.succeed(`Re-quantized to ${targetQuant.toUpperCase()}`);
+  console.log(chalk.green(`  [OK] Re-quantized to ${targetQuant.toUpperCase()}`));
 }
 
 /**
@@ -524,22 +524,23 @@ async function runHuggingFacePath(
   convertSpinner.succeed("FP16 GGUF ready");
 
   console.log(chalk.bold(`\n  [3/3] Quantizing to ${targetQuant.toUpperCase()}...`));
-  const quantSpinner = ora("Quantizing...").start();
 
   if (targetQuant === "f16") {
     copyFileSync(f16Path, outputPath);
+    console.log(chalk.green(`  [OK] Copied FP16 GGUF (no quantization needed)`));
   } else {
-    const quantResult = spawnSync(quantizeBinary, [f16Path, outputPath, targetQuant], {
-      stdio: "pipe",
-      timeout: 7200000,
+    const quantResult = await runQuantizeWithProgress({
+      binary: quantizeBinary,
+      args: [f16Path, outputPath, targetQuant],
+      timeoutMs: 7200000,
     });
     if (quantResult.status !== 0) {
-      quantSpinner.fail("Quantization failed");
-      console.error(chalk.red(quantResult.stderr?.toString() || "unknown error"));
+      console.error(chalk.red("\n  Quantization failed:"));
+      console.error(chalk.red(quantResult.stderr || "unknown error"));
       process.exit(1);
     }
+    console.log(chalk.green(`  [OK] Quantized to ${targetQuant.toUpperCase()}`));
   }
 
   if (existsSync(f16Path) && targetQuant !== "f16") unlinkSync(f16Path);
-  quantSpinner.succeed(`Quantized to ${targetQuant.toUpperCase()}`);
 }
