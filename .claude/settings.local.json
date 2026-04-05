@@ -98,7 +98,11 @@
       "Bash(printf \"y\\\\n\\\\x03\")",
       "Bash(printf \"\\\\x03\")",
       "Bash(timeout 6 node dist/compressx.js scan --all)",
-      "Bash(node dist/compressx.js scan --help)"
+      "Bash(node dist/compressx.js scan --help)",
+      "Bash(curl -s https://compressx.asmith.media)",
+      "Bash(compressx scan:*)",
+      "Bash(timeout 6 compressx)",
+      "Bash(compressx preview:*)"
     ]
   }
 }

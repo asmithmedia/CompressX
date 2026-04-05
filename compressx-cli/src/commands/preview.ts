@@ -16,8 +16,8 @@ export async function previewCommand(modelId: string) {
   }
 
   if (model.parametersBillion === 0) {
-    console.error(chalk.red(`\n  Custom HuggingFace repos don't have size metadata for preview.`));
-    console.log(chalk.gray("  Use 'compressx compress <repo-id>' to compress directly.\n"));
+    console.error(chalk.red(`\n  Custom repositories don't have size metadata for preview.`));
+    console.log(chalk.gray("  Use 'compressx compress <model>' to compress directly.\n"));
     process.exit(1);
   }
 
@@ -25,7 +25,7 @@ export async function previewCommand(modelId: string) {
 
   console.log(chalk.bold.cyan(`\n  CompressX Preview: ${model.name}`));
   console.log(chalk.gray(`  ${"-".repeat(60)}`));
-  console.log(`  HuggingFace:   ${chalk.gray(model.hfRepoId)}`);
+  console.log(`  Source:        ${chalk.gray(model.hfRepoId)}`);
   console.log(`  Parameters:    ${chalk.gray(model.parametersBillion + "B")}`);
   console.log(`  Original FP16: ${chalk.gray("~" + model.fp16SizeGb + " GB")}`);
   console.log();

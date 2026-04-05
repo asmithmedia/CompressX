@@ -24,6 +24,10 @@ program
   .command("scan", { isDefault: true })
   .description("Scan your Ollama library and suggest compressions (default)")
   .option("--all", "Show all installed models, not just ones that could be smaller")
+  .option(
+    "--preview",
+    "Show a library-wide preview of potential savings (read-only, no compression)",
+  )
   .option("-o, --output <dir>", "Output directory for GGUF files", "./compressx-output")
   .action(scanCommand);
 

@@ -259,7 +259,8 @@ export default function LandingPage() {
           {[
             { cmd: "compressx", desc: "Scan Ollama library and interactively compress models" },
             { cmd: "compressx --all", desc: "Show every installed model, even ones that already fit your hardware" },
-            { cmd: "compressx preview qwen3:14b", desc: "See every quant level side-by-side without compressing" },
+            { cmd: "compressx --preview", desc: "Library-wide preview: what compression would save for every installed model (read-only)" },
+            { cmd: "compressx preview qwen3:14b", desc: "See every quant level side-by-side for a specific model" },
             { cmd: "compressx compress qwen3:4b", desc: "Compress a specific model to the auto-recommended quant level" },
             { cmd: "compressx compress qwen3:4b -q q4_k_m", desc: "Compress with a specific quantization type" },
             { cmd: "compressx compress qwen3:4b --target lmstudio", desc: "Deploy to LM Studio instead of Ollama" },

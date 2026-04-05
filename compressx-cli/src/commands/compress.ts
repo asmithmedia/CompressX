@@ -44,7 +44,7 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   console.log(chalk.bold.cyan(`\n  CompressX`));
   console.log(chalk.gray(`  ${"-".repeat(50)}`));
   console.log(`  Model:         ${chalk.white(model.name)}`);
-  console.log(`  HuggingFace:   ${chalk.gray(model.hfRepoId)}`);
+  console.log(`  Source:        ${chalk.gray(model.hfRepoId)}`);
   console.log(`  Parameters:    ${chalk.gray(model.parametersBillion + "B")}`);
   console.log(`  Original size: ${chalk.gray("~" + model.fp16SizeGb + " GB (FP16)")}`);
   console.log(`  Target:        ${chalk.green(target.name)}`);
@@ -119,7 +119,7 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   console.log();
 
   // Step 1: Download
-  console.log(chalk.bold("  [1/4] Downloading original weights from HuggingFace..."));
+  console.log(chalk.bold("  [1/4] Downloading original weights..."));
   mkdirSync(downloadDir, { recursive: true });
   try {
     execSync(
@@ -127,7 +127,7 @@ export async function compressCommand(modelId: string, options: CompressOptions)
       { stdio: "inherit", timeout: 3600000 },
     );
   } catch {
-    console.error(chalk.red("\n  Download failed. Install huggingface_hub:"));
+    console.error(chalk.red("\n  Download failed. The huggingface_hub Python package is required:"));
     console.log(chalk.gray("    pip install huggingface_hub\n"));
     process.exit(1);
   }
