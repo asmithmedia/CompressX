@@ -1,6 +1,9 @@
 import chalk from "chalk";
 import ora from "ora";
 import inquirer from "inquirer";
+
+const Separator = inquirer.Separator;
+const EXIT_VALUE = "__compressx_exit__";
 import { detectHardware } from "../core/hardware-detect.js";
 import { isOllamaRunning, listOllamaModels, toCxName } from "../core/ollama-client.js";
 import { resolveModel, recommendQuantType } from "../core/model-resolver.js";
@@ -199,23 +202,37 @@ export async function scanCommand(options: ScanOptions = {}) {
         type: "checkbox",
         name: "selected",
         message: `Compress any of these to ${AGGRESSIVE_QUANT.toUpperCase()} anyway?`,
-        choices: selectable.map((c) => ({
-          name:
-            `${c.installedName.padEnd(nameWidth)} ` +
-            chalk.gray(`${c.currentSizeGb.toFixed(1)} GB -> ${c.aggressiveSizeGb.toFixed(1)} GB`) +
-            chalk.cyan(` (-${c.aggressiveSavingsPct}%)`),
-          value: c.installedName,
-          checked: false,
-        })),
+        choices: [
+          ...selectable.map((c) => ({
+            name:
+              `${c.installedName.padEnd(nameWidth)} ` +
+              chalk.gray(
+                `${c.currentSizeGb.toFixed(1)} GB -> ${c.aggressiveSizeGb.toFixed(1)} GB`,
+              ) +
+              chalk.cyan(` (-${c.aggressiveSavingsPct}%)`),
+            value: c.installedName,
+            checked: false,
+          })),
+          new Separator(" "),
+          {
+            name: chalk.gray("Exit without changes"),
+            value: EXIT_VALUE,
+            checked: false,
+          },
+        ],
       },
     ]);
 
-    if (selected.length === 0) {
-      console.log(chalk.gray("\n  Nothing selected. Exiting.\n"));
+    if (selected.length === 0 || selected.includes(EXIT_VALUE)) {
+      console.log(chalk.gray("\n  Exiting. No models were changed.\n"));
       return;
     }
 
-    await runCompressions(selected, AGGRESSIVE_QUANT, options.output);
+    await runCompressions(
+      selected.filter((v) => v !== EXIT_VALUE),
+      AGGRESSIVE_QUANT,
+      options.output,
+    );
     return;
   }
 
@@ -280,24 +297,36 @@ export async function scanCommand(options: ScanOptions = {}) {
       type: "checkbox",
       name: "selected",
       message: "Select models to compress:",
-      choices: actionable.map((c) => ({
-        name:
-          `${c.installedName.padEnd(nameWidth)} ` +
-          chalk.gray(`${c.currentSizeGb.toFixed(1)} GB -> ${c.targetSizeGb.toFixed(1)} GB`) +
-          (c.fitsWell ? chalk.gray("  (fits well)") : ""),
-        value: c.installedName,
-        checked: false,
-      })),
+      choices: [
+        ...actionable.map((c) => ({
+          name:
+            `${c.installedName.padEnd(nameWidth)} ` +
+            chalk.gray(`${c.currentSizeGb.toFixed(1)} GB -> ${c.targetSizeGb.toFixed(1)} GB`) +
+            (c.fitsWell ? chalk.gray("  (fits well)") : ""),
+          value: c.installedName,
+          checked: false,
+        })),
+        new Separator(" "),
+        {
+          name: chalk.gray("Exit without changes"),
+          value: EXIT_VALUE,
+          checked: false,
+        },
+      ],
     },
   ]);
 
-  if (selected.length === 0) {
-    console.log(chalk.gray("\n  Nothing selected. Exiting.\n"));
+  if (selected.length === 0 || selected.includes(EXIT_VALUE)) {
+    console.log(chalk.gray("\n  Exiting. No models were changed.\n"));
     return;
   }
 
   // Use the recommended quant for each model in normal mode
-  await runCompressions(selected, "", options.output);
+  await runCompressions(
+    selected.filter((v) => v !== EXIT_VALUE),
+    "",
+    options.output,
+  );
 }
 
 /**

@@ -102,7 +102,9 @@
       "Bash(curl -s https://compressx.asmith.media)",
       "Bash(compressx scan:*)",
       "Bash(timeout 6 compressx)",
-      "Bash(compressx preview:*)"
+      "Bash(compressx preview:*)",
+      "Bash(timeout 5 compressx)",
+      "Bash(timeout 5 compressx --all)"
     ]
   }
 }
