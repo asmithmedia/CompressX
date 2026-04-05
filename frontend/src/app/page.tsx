@@ -196,12 +196,72 @@ export default function LandingPage() {
             { cmd: "compressx compress qwen3:4b -q q4_k_m", desc: "Compress with a specific quantization type" },
             { cmd: "compressx hardware", desc: "Show detected GPU, VRAM, RAM, and recommended model sizes" },
             { cmd: "compressx models", desc: "List all supported models" },
+            { cmd: "compressx update", desc: "Update CompressX to the latest version" },
+            { cmd: "compressx uninstall", desc: "Remove CompressX data directory (CLI removal is one more step)" },
           ].map((item) => (
             <div key={item.cmd} className="bg-gray-950 border border-gray-900 rounded-lg px-5 py-4">
               <code className="text-green-400 text-sm">$ {item.cmd}</code>
               <p className="text-gray-500 text-sm mt-1 font-sans">{item.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Updates & Uninstall */}
+      <section id="updates" className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-900 font-sans">
+        <h2 className="text-3xl font-bold mb-3 text-center">Updates & Uninstall</h2>
+        <p className="text-gray-500 text-sm text-center mb-10">
+          CompressX checks for updates automatically once per day. You can also
+          manage it manually.
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Update */}
+          <div className="bg-gray-950 border border-gray-900 rounded-lg p-6">
+            <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+              <span className="text-green-400 text-sm">▲</span> Update
+            </h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Get the latest version with new models, bug fixes, and features.
+            </p>
+            <div className="space-y-2">
+              <div className="bg-black border border-gray-800 rounded px-3 py-2">
+                <code className="text-green-400 text-xs">$ compressx update</code>
+              </div>
+              <div className="bg-black border border-gray-800 rounded px-3 py-2">
+                <code className="text-green-400 text-xs">$ npm install -g compressx@latest</code>
+              </div>
+            </div>
+            <p className="text-gray-600 text-xs mt-3">
+              Either command works — the first is a shortcut for the second.
+            </p>
+          </div>
+
+          {/* Uninstall */}
+          <div className="bg-gray-950 border border-gray-900 rounded-lg p-6">
+            <h3 className="text-white font-bold mb-3 flex items-center gap-2">
+              <span className="text-red-400 text-sm">×</span> Uninstall
+            </h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Fully remove CompressX, the CLI binary, and its data directory
+              (<code className="text-gray-300">~/.compressx/</code>).
+            </p>
+            <div className="space-y-2">
+              <div className="bg-black border border-gray-800 rounded px-3 py-2">
+                <code className="text-green-400 text-xs break-all">
+                  $ curl -fsSL https://compressx.asmith.media/uninstall.sh | sh
+                </code>
+              </div>
+              <div className="bg-black border border-gray-800 rounded px-3 py-2">
+                <code className="text-green-400 text-xs break-all">
+                  {`$ powershell -c "irm https://compressx.asmith.media/uninstall.ps1 | iex"`}
+                </code>
+              </div>
+            </div>
+            <p className="text-gray-600 text-xs mt-3">
+              Top line: macOS/Linux. Bottom line: Windows.
+            </p>
+          </div>
         </div>
       </section>
 

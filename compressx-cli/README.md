@@ -53,6 +53,36 @@ ollama run qwen3:4b-cx
 | `compressx compress <model> -q q4_k_m` | Compress with a specific quantization type |
 | `compressx hardware` | Show detected GPU, VRAM, RAM, and max model size |
 | `compressx models` | List all supported models |
+| `compressx update` | Update CompressX to the latest version |
+| `compressx uninstall` | Remove CompressX data directory |
+
+## Updating
+
+```bash
+compressx update
+# or equivalently:
+npm install -g compressx@latest
+```
+
+CompressX also checks for new versions automatically once per day and shows a one-line banner when an update is available. Set `COMPRESSX_NO_UPDATE_CHECK=1` in your environment to opt out.
+
+## Uninstalling
+
+One-line uninstaller that removes the CLI and data directory:
+
+```bash
+# macOS / Linux
+curl -fsSL https://compressx.asmith.media/uninstall.sh | sh
+
+# Windows
+powershell -c "irm https://compressx.asmith.media/uninstall.ps1 | iex"
+```
+
+Or do it manually in two steps:
+```bash
+compressx uninstall          # removes ~/.compressx/ data
+npm uninstall -g compressx   # removes the CLI binary
+```
 
 ## Requirements
 
