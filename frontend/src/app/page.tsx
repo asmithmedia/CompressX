@@ -243,11 +243,15 @@ export default function LandingPage() {
         <div className="text-center mb-10">
           <h2 className="text-2xl font-bold mb-3">Works with your runtime</h2>
           <p className="text-gray-500 text-sm">
-            Compress once, deploy anywhere. Choose your target with the{" "}
+            Source models from Ollama or LM Studio with{" "}
+            <code className="text-green-400 bg-gray-900 px-1.5 py-0.5 rounded text-xs">
+              --source
+            </code>
+            . Deploy anywhere with{" "}
             <code className="text-green-400 bg-gray-900 px-1.5 py-0.5 rounded text-xs">
               --target
-            </code>{" "}
-            flag.
+            </code>
+            .
           </p>
         </div>
 
@@ -269,14 +273,20 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-gray-950 border border-gray-900 rounded-lg p-5">
-            <h3 className="text-white font-bold mb-2">LM Studio</h3>
+            <div className="flex items-baseline gap-2 mb-2">
+              <h3 className="text-white font-bold">LM Studio</h3>
+              <span className="text-cyan-400 text-[10px] bg-cyan-500/10 px-2 py-0.5 rounded">
+                SOURCE + TARGET
+              </span>
+            </div>
             <p className="text-gray-500 text-xs mb-3">
-              Drops the GGUF into{" "}
-              <code className="text-green-400">~/.lmstudio/models/</code> so it
-              appears in My Models.
+              Scan your LM Studio library with{" "}
+              <code className="text-green-400">--source lmstudio</code>, or deploy
+              compressed GGUFs into{" "}
+              <code className="text-green-400">~/.lmstudio/models/</code>.
             </p>
             <code className="text-green-400 text-xs block bg-black border border-gray-800 rounded px-2 py-1.5 break-all">
-              compressx compress qwen3:4b --target lmstudio
+              compressx scan --source lmstudio
             </code>
           </div>
 
@@ -311,8 +321,9 @@ export default function LandingPage() {
             <h3 className="text-lg font-bold mb-2">Scan</h3>
             <p className="text-gray-400 text-sm">
               Run <code className="text-green-400 bg-gray-900 px-1.5 py-0.5 rounded">compressx</code>.
-              It connects to your local Ollama and auto-detects your GPU/RAM to
-              find models that could be smaller.
+              It scans your local Ollama library (or{" "}
+              <code className="text-green-400 bg-gray-900 px-1.5 py-0.5 rounded">--source lmstudio</code>)
+              and auto-detects your GPU/RAM to find models that could be smaller.
             </p>
           </div>
           <div>
@@ -391,6 +402,8 @@ export default function LandingPage() {
             { cmd: "compressx compress qwen3:4b", desc: "Compress a specific model to the auto-recommended quant level" },
             { cmd: "compressx compress qwen3:4b -q q4_k_m", desc: "Compress with a specific quantization type" },
             { cmd: "compressx compress qwen3:4b --from-source", desc: "Download original weights from HuggingFace for pristine quality (slower)" },
+            { cmd: "compressx scan --source lmstudio", desc: "Scan your LM Studio models directory for GGUFs to compress" },
+            { cmd: "compressx compress Qwen/Qwen3-4B --source lmstudio -q q3_k_m", desc: "Re-quantize a model from LM Studio (~30 sec, no download)" },
             { cmd: "compressx compress qwen3:4b --target lmstudio", desc: "Deploy to LM Studio instead of Ollama" },
             { cmd: "compressx compress qwen3:4b --target gguf", desc: "Just produce a GGUF file (for llama.cpp, Jan, GPT4All, Msty, etc.)" },
             { cmd: "compressx compress qwen3:4b --benchmark", desc: "Compress and immediately run a side-by-side benchmark" },
