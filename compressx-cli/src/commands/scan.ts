@@ -13,11 +13,16 @@ import {
 } from "../core/ollama-client.js";
 import { resolveModel, recommendQuantType } from "../core/model-resolver.js";
 import { compressCommand } from "./compress.js";
+import {
+  scanLMStudioModels,
+  getLMStudioModelsDir,
+} from "../core/lmstudio-scanner.js";
 
 interface ScanOptions {
   all?: boolean;
   preview?: boolean;
   output?: string;
+  source?: string;
 }
 
 interface Candidate {
@@ -76,6 +81,12 @@ function estimateSize(parametersBillion: number, bpw: number): number {
  *     prompt). Useful for "what if" exploration.
  */
 export async function scanCommand(options: ScanOptions = {}) {
+  // Route to LM Studio scan if --source lmstudio
+  if (options.source === "lmstudio") {
+    await scanLMStudioCommand(options);
+    return;
+  }
+
   console.log(chalk.bold.cyan("\n  CompressX  ") + chalk.gray("- LLM Compression for Ollama\n"));
 
   const ollamaSpinner = ora("Checking Ollama...").start();
@@ -482,4 +493,91 @@ async function runCompressionsPerModelQuant(
   console.log(chalk.green.bold("\n  [OK] All done!\n"));
   console.log(chalk.gray("  See your new models:"));
   console.log(chalk.cyan("    ollama list\n"));
+}
+
+/**
+ * Scan LM Studio's local models directory for GGUF files that can be
+ * re-quantized. Same UX as the Ollama scan but adapted for LM Studio's
+ * flat filesystem layout.
+ */
+async function scanLMStudioCommand(options: ScanOptions) {
+  console.log(
+    chalk.bold.cyan("\n  CompressX  ") +
+      chalk.gray("- LLM Compression from LM Studio\n"),
+  );
+
+  const modelsDir = getLMStudioModelsDir();
+  const scanSpinner = ora(`Scanning ${modelsDir}...`).start();
+  const models = scanLMStudioModels();
+
+  if (models.length === 0) {
+    scanSpinner.fail("No GGUF files found");
+    console.log(
+      chalk.yellow(`\n  LM Studio models directory: ${modelsDir}`),
+    );
+    console.log(
+      chalk.gray(
+        "  Make sure LM Studio has downloaded models, or check Settings > Local Models.\n",
+      ),
+    );
+    return;
+  }
+
+  scanSpinner.succeed(`Found ${models.length} GGUF file${models.length > 1 ? "s" : ""} in LM Studio`);
+
+  const hwSpinner = ora("Detecting hardware...").start();
+  const hw = await detectHardware();
+  hwSpinner.succeed(
+    `${hw.gpuName || "CPU-only"} | ${hw.ramGb} GB RAM${hw.vramGb ? ` | ${hw.vramGb} GB VRAM` : ""} | max ~${hw.maxModelGb} GB models`,
+  );
+
+  console.log();
+  console.log(chalk.bold(`  LM Studio models (${models.length}):`));
+  console.log();
+
+  const nameWidth = Math.max(20, ...models.map((m) => m.displayName.length + 2));
+  console.log(
+    chalk.gray(
+      "  " +
+        "Model".padEnd(nameWidth) +
+        "Size".padEnd(12) +
+        "Quant".padEnd(12) +
+        "Path",
+    ),
+  );
+  console.log(chalk.gray("  " + "-".repeat(nameWidth + 50)));
+
+  for (const m of models) {
+    console.log(
+      "  " +
+        chalk.white(m.displayName.padEnd(nameWidth)) +
+        chalk.gray(`${m.sizeGb.toFixed(1)} GB`.padEnd(12)) +
+        (m.inferredQuant
+          ? chalk.cyan(m.inferredQuant.toUpperCase().padEnd(12))
+          : chalk.gray("unknown".padEnd(12))) +
+        chalk.gray(m.name),
+    );
+  }
+
+  console.log();
+
+  // Only models with a known quant can be re-quantized to something smaller
+  const compressible = models.filter((m) => m.inferredQuant !== null);
+  if (compressible.length === 0) {
+    console.log(
+      chalk.gray(
+        "  No models have recognizable quant levels in their filenames.\n" +
+          "  CompressX needs to know the source quant to re-quantize safely.\n" +
+          "  Tip: rename your GGUF files to include the quant level (e.g. model-q8_0.gguf).\n",
+      ),
+    );
+    return;
+  }
+
+  console.log(
+    chalk.gray(
+      "  To compress a model from LM Studio:\n" +
+        "    compressx compress <Publisher>/<Repo> --source lmstudio -q <quant> --target gguf\n",
+    ),
+  );
 }

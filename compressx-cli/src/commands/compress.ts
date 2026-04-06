@@ -24,6 +24,7 @@ import { canRequantize, normalizeQuant } from "../core/quant-compat.js";
 import { setupLlamaCpp } from "../core/setup-llama-cpp.js";
 import { runSmokeTest, printSmokeFailureHelp } from "../core/smoke-test.js";
 import { runQuantizeWithProgress } from "../core/progress-quantize.js";
+import { findLMStudioModel } from "../core/lmstudio-scanner.js";
 
 /**
  * Quants that are known to break thinking/reasoning models like Qwen3,
@@ -43,6 +44,7 @@ interface CompressOptions {
   target?: string;
   fromSource?: boolean;
   benchmark?: boolean;
+  source?: string;
 }
 
 type CompressSource =
@@ -174,7 +176,13 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   };
 
   // Decide source path: local blob vs HuggingFace download
-  const source = await chooseSource(model.ollamaId, quantType, options.fromSource === true);
+  const source = await chooseSource(
+    model.ollamaId,
+    quantType,
+    options.fromSource === true,
+    options.source,
+    modelId,
+  );
 
   if (source.kind === "local") {
     console.log(
@@ -390,8 +398,58 @@ async function chooseSource(
   ollamaId: string,
   targetQuant: string,
   forceFromSource: boolean,
+  sourceOverride?: string,
+  originalInput?: string,
 ): Promise<CompressSource> {
   if (forceFromSource) return { kind: "huggingface" };
+
+  // LM Studio source: look for the GGUF in ~/.lmstudio/models/
+  if (sourceOverride === "lmstudio") {
+    const lmsModel = findLMStudioModel(originalInput || ollamaId);
+    if (!lmsModel) {
+      console.log(
+        chalk.yellow(
+          `  Model not found in LM Studio's models directory. Falling back to HuggingFace.`,
+        ),
+      );
+      return { kind: "huggingface" };
+    }
+    if (!lmsModel.inferredQuant) {
+      console.log(
+        chalk.yellow(
+          `  Found ${lmsModel.name} but can't determine its quant level from the filename.`,
+        ),
+      );
+      console.log(
+        chalk.gray(
+          `  Tip: rename the file to include the quant (e.g. model-q8_0.gguf).`,
+        ),
+      );
+      return { kind: "huggingface" };
+    }
+
+    const decision = canRequantize(lmsModel.inferredQuant, targetQuant);
+    if (decision.kind === "impossible") {
+      console.log(
+        chalk.yellow(
+          `  Can't re-quantize ${lmsModel.inferredQuant.toUpperCase()} → ${targetQuant.toUpperCase()}: ${decision.reason}. Falling back to HuggingFace.`,
+        ),
+      );
+      return { kind: "huggingface" };
+    }
+    if (decision.kind === "warn") {
+      console.log(chalk.yellow(`  ${decision.message}`));
+    } else if (decision.kind === "strong-warn") {
+      console.log(chalk.red.bold(`  WARNING: ${decision.message}`));
+    }
+
+    return {
+      kind: "local",
+      blobPath: lmsModel.ggufPath,
+      sourceQuant: lmsModel.inferredQuant,
+      sizeBytes: lmsModel.sizeBytes,
+    };
+  }
 
   const blob = findLocalBlob(ollamaId);
   if (!blob) return { kind: "huggingface" };

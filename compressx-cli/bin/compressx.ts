@@ -11,7 +11,7 @@ import { previewCommand } from "../src/commands/preview.js";
 import { benchmarkCommand } from "../src/commands/benchmark.js";
 import { checkForUpdatesSync, printUpdateBanner } from "../src/core/update-notifier.js";
 
-const VERSION = "0.7.0";
+const VERSION = "0.7.1";
 
 program
   .name("compressx")
@@ -29,6 +29,11 @@ program
     "--preview",
     "Show a library-wide preview of potential savings (read-only, no compression)",
   )
+  .option(
+    "-s, --source <name>",
+    "Model source: ollama (default) or lmstudio",
+    "ollama",
+  )
   .option("-o, --output <dir>", "Output directory for GGUF files", "./compressx-output")
   .action(scanCommand);
 
@@ -45,6 +50,10 @@ program
     "-t, --target <name>",
     "Deployment target: ollama (default), lmstudio, or gguf",
     "ollama",
+  )
+  .option(
+    "-s, --source <name>",
+    "Model source: ollama (default) or lmstudio",
   )
   .option(
     "--from-source",
