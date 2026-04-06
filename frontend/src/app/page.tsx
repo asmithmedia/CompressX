@@ -21,12 +21,20 @@ export default function LandingPage() {
               </a>
             </div>
           </div>
-          <div className="flex gap-6 text-sm">
+          <div className="flex gap-6 text-sm items-center">
             <a href="#how-it-works" className="text-gray-400 hover:text-white transition">
               How it works
             </a>
             <a href="#docs" className="text-gray-400 hover:text-white transition">
               Docs
+            </a>
+            <a
+              href="https://github.com/asmithmedia/CompressX"
+              className="text-gray-400 hover:text-white transition"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
             </a>
           </div>
         </div>
@@ -381,10 +389,18 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="bg-gray-950 border border-gray-900 rounded-lg p-6">
-            <h3 className="text-white font-bold mb-2">Free forever</h3>
+            <h3 className="text-white font-bold mb-2">Open source</h3>
             <p className="text-gray-400 text-sm">
-              The CLI is open source and free. No account required. No credits.
-              No rate limits on local compression.
+              MIT licensed on{" "}
+              <a
+                href="https://github.com/asmithmedia/CompressX"
+                className="text-green-400 hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub
+              </a>
+              . Free forever. No account required. No credits. No rate limits.
             </p>
           </div>
         </div>
@@ -517,6 +533,14 @@ export default function LandingPage() {
             </a>
             <a href="#docs" className="hover:text-gray-300">
               Docs
+            </a>
+            <a
+              href="https://github.com/asmithmedia/CompressX"
+              className="hover:text-gray-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
             </a>
           </div>
         </div>

@@ -33,7 +33,7 @@
     "local-llm"
   ],
   "author": "A. Smith Media",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "homepage": "https://compressx.asmith.media",
   "engines": {
     "node": ">=18"
