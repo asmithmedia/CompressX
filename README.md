@@ -8,6 +8,12 @@ CompressX is an open-source CLI that shrinks LLM models for any GGUF-compatible 
 npm install -g compressx
 ```
 
+![CompressX Scan](compressx-cli/docs/screenshot-scan.svg)
+
+![CompressX Compress](compressx-cli/docs/screenshot-compress.svg)
+
+![CompressX Benchmark](compressx-cli/docs/screenshot-benchmark.svg)
+
 ## What's in this repo
 
 | Directory | What it is |

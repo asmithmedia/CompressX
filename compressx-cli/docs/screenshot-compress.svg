@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" font-family="'SF Mono','Cascadia Code','Consolas',monospace" font-size="13">
+  <rect width="720" height="460" rx="10" fill="#0d1117"/>
+  <rect width="720" height="36" rx="10" fill="#161b22"/>
+  <rect y="26" width="720" height="10" fill="#161b22"/>
+  <circle cx="20" cy="18" r="6" fill="#ff5f57"/>
+  <circle cx="40" cy="18" r="6" fill="#febc2e"/>
+  <circle cx="60" cy="18" r="6" fill="#28c840"/>
+  <text x="360" y="22" text-anchor="middle" fill="#6e7681" font-size="12">compressx compress qwen3:4b</text>
+  <!-- Model info -->
+  <text x="20" y="60" fill="#58a6ff" font-weight="bold">  CompressX</text>
+  <text x="20" y="80" fill="#8b949e">  Model:         </text><text x="160" y="80" fill="#e6edf3">Qwen 3 4B</text>
+  <text x="20" y="98" fill="#8b949e">  Parameters:    </text><text x="160" y="98" fill="#8b949e">4B</text>
+  <text x="20" y="116" fill="#8b949e">  Target:        </text><text x="160" y="116" fill="#3fb950">Ollama</text>
+  <!-- Steps -->
+  <text x="20" y="146" fill="#3fb950">  ✓</text><text x="40" y="146" fill="#8b949e"> NVIDIA RTX 5060 | 32 GB RAM | 8 GB VRAM</text>
+  <text x="20" y="166" fill="#58a6ff">  Auto-selected: </text><text x="160" y="166" fill="#58a6ff" font-weight="bold">Q4_K_M</text><text x="230" y="166" fill="#8b949e"> (Recommended, ~2.55 GB)</text>
+  <text x="20" y="186" fill="#3fb950">  Source path:   local Ollama blob (Q4_0, 2.5 GB)</text>
+  <!-- Progress bar -->
+  <text x="20" y="216" fill="#e6edf3" font-weight="bold">  [1/1] Re-quantizing local blob to Q4_K_M...</text>
+  <text x="20" y="240" fill="#3fb950">  ████████████████████████████</text>
+  <text x="260" y="240" fill="#e6edf3" font-weight="bold"> 100.0%</text>
+  <text x="335" y="240" fill="#8b949e"> 201/201 tensors  0:08 elapsed</text>
+  <text x="20" y="260" fill="#3fb950">  ✓ Deployed to Ollama</text>
+  <!-- Summary -->
+  <text x="20" y="290" fill="#3fb950" font-weight="bold">  [OK] Compression complete!</text>
+  <text x="20" y="306" fill="#6e7681">  ──────────────────────────────────────────────────</text>
+  <text x="20" y="324" fill="#8b949e">  Original:    8 GB</text>
+  <text x="20" y="342" fill="#8b949e">  Compressed:  </text><text x="140" y="342" fill="#3fb950">2.37 GB</text><text x="220" y="342" fill="#8b949e"> (-70%)</text>
+  <text x="20" y="360" fill="#8b949e">  Quant:       Q4_K_M</text>
+  <!-- VRAM Budget -->
+  <text x="20" y="390" fill="#e6edf3" font-weight="bold">  VRAM Budget (8 GB):</text>
+  <text x="20" y="408" fill="#8b949e">    Weights:    2.4 GB</text>
+  <text x="20" y="426" fill="#8b949e">    KV Cache:   1.6 GB</text><text x="200" y="426" fill="#6e7681"> (FP16, 56K context)</text>
+  <text x="20" y="444" fill="#8b949e">    Headroom:   4.0 GB</text>
+  <text x="350" y="444" fill="#58a6ff">  num_ctx 57344</text>
+</svg>

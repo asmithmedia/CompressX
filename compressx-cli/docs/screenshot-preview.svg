@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="400" font-family="'SF Mono','Cascadia Code','Consolas',monospace" font-size="13">
+  <rect width="780" height="400" rx="10" fill="#0d1117"/>
+  <rect width="780" height="36" rx="10" fill="#161b22"/>
+  <rect y="26" width="780" height="10" fill="#161b22"/>
+  <circle cx="20" cy="18" r="6" fill="#ff5f57"/>
+  <circle cx="40" cy="18" r="6" fill="#febc2e"/>
+  <circle cx="60" cy="18" r="6" fill="#28c840"/>
+  <text x="390" y="22" text-anchor="middle" fill="#6e7681" font-size="12">compressx preview qwen3:14b</text>
+  <!-- Header -->
+  <text x="20" y="60" fill="#58a6ff" font-weight="bold">  CompressX Preview: Qwen 3 14B</text>
+  <text x="20" y="80" fill="#8b949e">  Parameters: 14B  |  Original FP16: ~28 GB</text>
+  <text x="20" y="100" fill="#8b949e">  Hardware: NVIDIA RTX 5060 | 8 GB VRAM | max ~6 GB models</text>
+  <!-- Table header -->
+  <text x="20" y="132" fill="#6e7681">  Quant       Size       Reduction   VRAM?     Max Ctx   Quality</text>
+  <text x="20" y="148" fill="#6e7681">  ──────────────────────────────────────────────────────────────────</text>
+  <!-- Rows -->
+  <text x="20" y="168" fill="#58a6ff">  f16</text>
+  <text x="120" y="168" fill="#e6edf3">28.1 GB</text>
+  <text x="230" y="168" fill="#6e7681">  0%</text>
+  <text x="330" y="168" fill="#f85149">[NO]</text>
+  <text x="430" y="168" fill="#6e7681">--</text>
+  <text x="510" y="168" fill="#6e7681">Baseline</text>
+
+  <text x="20" y="188" fill="#58a6ff">  q8_0</text>
+  <text x="120" y="188" fill="#e6edf3">15.0 GB</text>
+  <text x="230" y="188" fill="#3fb950">-47%</text>
+  <text x="330" y="188" fill="#f85149">[NO]</text>
+  <text x="430" y="188" fill="#6e7681">--</text>
+  <text x="510" y="188" fill="#6e7681">Best</text>
+
+  <text x="20" y="208" fill="#58a6ff">  q5_k_m</text>
+  <text x="120" y="208" fill="#e6edf3">10.1 GB</text>
+  <text x="230" y="208" fill="#3fb950">-64%</text>
+  <text x="330" y="208" fill="#f85149">[NO]</text>
+  <text x="430" y="208" fill="#6e7681">--</text>
+  <text x="510" y="208" fill="#6e7681">High</text>
+
+  <text x="20" y="228" fill="#58a6ff">  q4_k_m</text>
+  <text x="120" y="228" fill="#e6edf3">8.7 GB</text>
+  <text x="230" y="228" fill="#3fb950">-69%</text>
+  <text x="330" y="228" fill="#f85149">[NO]</text>
+  <text x="430" y="228" fill="#6e7681">--</text>
+  <text x="510" y="228" fill="#6e7681">Recommended</text>
+
+  <text x="20" y="248" fill="#58a6ff">  q4_0</text>
+  <text x="120" y="248" fill="#e6edf3">8.0 GB</text>
+  <text x="230" y="248" fill="#3fb950">-72%</text>
+  <text x="330" y="248" fill="#f85149">[NO]</text>
+  <text x="430" y="248" fill="#6e7681">--</text>
+  <text x="510" y="248" fill="#6e7681">Good, fast</text>
+
+  <text x="20" y="268" fill="#58a6ff">  q3_k_m</text>
+  <text x="120" y="268" fill="#e6edf3">6.9 GB</text>
+  <text x="230" y="268" fill="#3fb950">-75%</text>
+  <text x="330" y="268" fill="#f85149">[NO]</text>
+  <text x="430" y="268" fill="#e6edf3">5K</text>
+  <text x="510" y="268" fill="#6e7681">Fair</text>
+
+  <text x="20" y="288" fill="#58a6ff">  q2_k</text>
+  <text x="120" y="288" fill="#e6edf3">6.0 GB</text>
+  <text x="230" y="288" fill="#3fb950">-79%</text>
+  <text x="330" y="288" fill="#d29922">[TIGHT]</text>
+  <text x="430" y="288" fill="#e6edf3">10K</text>
+  <text x="510" y="288" fill="#6e7681">Reduced</text>
+
+  <!-- Footer -->
+  <text x="20" y="324" fill="#e6edf3" font-weight="bold">  To compress with the best quant for your hardware:</text>
+  <text x="20" y="344" fill="#58a6ff">    compressx compress qwen3:14b -q q2_k</text>
+
+  <text x="20" y="378" fill="#6e7681">  Max Ctx = max context tokens that fit in your VRAM after weights + KV cache</text>
+</svg>

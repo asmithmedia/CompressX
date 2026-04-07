@@ -8,6 +8,22 @@ One command to shrink LLM models for any GGUF-compatible runtime — Ollama, LM 
 npm install -g compressx
 ```
 
+### Scan your library and compress interactively
+
+![CompressX Scan](docs/screenshot-scan.svg)
+
+### Compress with live progress bar and VRAM-optimized context
+
+![CompressX Compress](docs/screenshot-compress.svg)
+
+### Preview every quant level with max context per GPU
+
+![CompressX Preview](docs/screenshot-preview.svg)
+
+### Benchmark before vs. after with a color-coded verdict
+
+![CompressX Benchmark](docs/screenshot-benchmark.svg)
+
 ## Quick Start
 
 ```bash
