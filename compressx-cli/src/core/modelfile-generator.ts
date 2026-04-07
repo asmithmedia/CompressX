@@ -44,27 +44,33 @@ export function generateModelfile(
   modelName: string,
   quantType: string,
   sourceOllamaId?: string,
+  numCtx?: number,
 ): string {
   // Try to inherit the source model's directives (TEMPLATE, etc.)
   if (sourceOllamaId) {
     const sourceModelfile = getSourceModelfile(sourceOllamaId);
     if (sourceModelfile) {
-      // Replace the FROM line (which points at the source blob) with
-      // our new relative path. `ollama create` resolves relative paths
-      // against the cwd, and we run it from the output directory.
-      const rewritten = sourceModelfile
-        // Strip the header comments added by `ollama show`
+      let rewritten = sourceModelfile
         .replace(/^#.*\n/gm, "")
-        // Replace the first FROM directive with our filename
         .replace(/^FROM\s+.*$/m, `FROM ./${ggufFilename}`);
+
+      // Inject or replace num_ctx if we have a VRAM-optimized value
+      if (numCtx) {
+        if (/^PARAMETER\s+num_ctx\s+/m.test(rewritten)) {
+          rewritten = rewritten.replace(
+            /^PARAMETER\s+num_ctx\s+\d+/m,
+            `PARAMETER num_ctx ${numCtx}`,
+          );
+        } else {
+          rewritten = rewritten.trimEnd() + `\nPARAMETER num_ctx ${numCtx}\n`;
+        }
+      }
 
       return `# Compressed with CompressX (${quantType.toUpperCase()})\n# Inherited from ${sourceOllamaId}\n${rewritten.trimStart()}`;
     }
   }
 
-  // Fallback: minimal modelfile. This loses chat template fidelity but
-  // is better than nothing for models not in Ollama (e.g. --from-source
-  // path compressing a HuggingFace repo directly).
+  const ctx = numCtx || 4096;
   return `# Modelfile for ${modelName} (${quantType.toUpperCase()})
 # Compressed with CompressX (https://compressx.asmith.media)
 FROM ./${ggufFilename}
@@ -75,6 +81,6 @@ SYSTEM """You are a helpful assistant."""
 # Parameters
 PARAMETER temperature 0.7
 PARAMETER top_p 0.9
-PARAMETER num_ctx 4096
+PARAMETER num_ctx ${ctx}
 `;
 }

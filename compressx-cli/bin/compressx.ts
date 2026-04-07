@@ -11,7 +11,7 @@ import { previewCommand } from "../src/commands/preview.js";
 import { benchmarkCommand } from "../src/commands/benchmark.js";
 import { checkForUpdatesSync, printUpdateBanner } from "../src/core/update-notifier.js";
 
-const VERSION = "0.7.1";
+const VERSION = "0.8.0";
 
 program
   .name("compressx")

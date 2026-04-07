@@ -2,6 +2,7 @@ import chalk from "chalk";
 import { detectHardware } from "../core/hardware-detect.js";
 import { resolveModel } from "../core/model-resolver.js";
 import { isThinkingModel } from "../core/ollama-client.js";
+import { calculateVramBudget, formatContext } from "../core/vram-optimizer.js";
 
 const UNSAFE_QUANTS_FOR_THINKING = new Set(["q2_k", "iq2_xxs", "iq2_xs", "q3_k_s"]);
 
@@ -59,12 +60,12 @@ export async function previewCommand(modelId: string) {
   ];
 
   // Header
-  console.log(
-    chalk.gray(
-      "  Quant Type   Size      Reduction   Fits VRAM?   Quality",
-    ),
-  );
-  console.log(chalk.gray("  " + "-".repeat(70)));
+  const showCtx = hw.vramGb != null;
+  const header = showCtx
+    ? "  Quant Type   Size      Reduction   Fits VRAM?   Max Ctx   Quality"
+    : "  Quant Type   Size      Reduction   Fits VRAM?   Quality";
+  console.log(chalk.gray(header));
+  console.log(chalk.gray("  " + "-".repeat(showCtx ? 80 : 70)));
 
   let bestFit: string | null = null;
 
@@ -80,7 +81,6 @@ export async function previewCommand(modelId: string) {
       const maxGb = hw.maxModelGb;
       if (sizeGb <= maxGb * 0.9) {
         fits = chalk.green("[YES]");
-        // Don't pick an unsafe quant as "best fit" for thinking models
         if (!bestFit && !unsafeForThinking) bestFit = row.quant;
       } else if (sizeGb <= maxGb) {
         fits = chalk.yellow("[TIGHT]");
@@ -88,6 +88,20 @@ export async function previewCommand(modelId: string) {
       } else {
         fits = chalk.red("[NO]");
       }
+    }
+
+    // Calculate max context for this quant level
+    let ctxCol = "";
+    if (showCtx) {
+      const budget = calculateVramBudget(
+        sizeGb,
+        hw.vramGb,
+        model.family,
+        model.parametersBillion,
+      );
+      ctxCol = budget
+        ? chalk.white(formatContext(budget.maxContext).padEnd(9))
+        : chalk.gray("--".padEnd(9));
     }
 
     const quantCol = chalk.cyan(row.quant.padEnd(10));
@@ -101,7 +115,10 @@ export async function previewCommand(modelId: string) {
       ? chalk.red(`${row.label} — breaks reasoning`)
       : chalk.gray(row.label);
 
-    console.log(`  ${quantCol}   ${sizeCol} ${reductionCol} ${fitsCol} ${qualityCol}`);
+    const line = showCtx
+      ? `  ${quantCol}   ${sizeCol} ${reductionCol} ${fitsCol} ${ctxCol} ${qualityCol}`
+      : `  ${quantCol}   ${sizeCol} ${reductionCol} ${fitsCol} ${qualityCol}`;
+    console.log(line);
   }
 
   console.log();

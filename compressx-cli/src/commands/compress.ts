@@ -25,6 +25,7 @@ import { setupLlamaCpp } from "../core/setup-llama-cpp.js";
 import { runSmokeTest, printSmokeFailureHelp } from "../core/smoke-test.js";
 import { runQuantizeWithProgress } from "../core/progress-quantize.js";
 import { findLMStudioModel } from "../core/lmstudio-scanner.js";
+import { calculateVramBudget, formatVramBudget } from "../core/vram-optimizer.js";
 
 /**
  * Quants that are known to break thinking/reasoning models like Qwen3,
@@ -256,6 +257,7 @@ export async function compressCommand(modelId: string, options: CompressOptions)
   // Everything past this point runs inside a try/finally so a crash,
   // OOM, timeout, or ^C leaves no partial files behind.
   let pipelineSucceeded = false;
+  let vramBudget: ReturnType<typeof calculateVramBudget> = null;
   try {
     // Execute the chosen path — writes to tmpOutputPath inside workDir
     if (source.kind === "local") {
@@ -280,6 +282,19 @@ export async function compressCommand(modelId: string, options: CompressOptions)
     }
     renameSync(tmpOutputPath, outputPath);
 
+    // Calculate VRAM budget to determine optimal num_ctx. The budget
+    // accounts for compressed weights + KV cache and finds the maximum
+    // context length that fits in the user's GPU.
+    const compressedSizeGb = existsSync(outputPath)
+      ? statSync(outputPath).size / 1e9
+      : 0;
+    vramBudget = calculateVramBudget(
+      compressedSizeGb,
+      hw.vramGb,
+      model.family,
+      model.parametersBillion,
+    );
+
     // Generate Modelfile. When the source model exists in Ollama, we
     // inherit its TEMPLATE/SYSTEM/PARAMETER directives so the compressed
     // variant keeps the correct chat format (Qwen3, Llama 3, Gemma, etc.
@@ -290,6 +305,7 @@ export async function compressCommand(modelId: string, options: CompressOptions)
       model.name,
       quantType,
       source.kind === "local" ? model.ollamaId : undefined,
+      vramBudget?.maxContext,
     );
     writeFileSync(join(outputDir, "Modelfile"), modelfileContent);
 
@@ -346,6 +362,14 @@ export async function compressCommand(modelId: string, options: CompressOptions)
     console.log();
     for (const line of extraLines) {
       console.log(`  ${chalk.gray(line)}`);
+    }
+  }
+
+  // Print VRAM budget breakdown if we could calculate it
+  if (vramBudget) {
+    const budgetLines = formatVramBudget(vramBudget);
+    for (const line of budgetLines) {
+      console.log(line);
     }
   }
 
